@@ -130,4 +130,14 @@ class Greedy():
             np.random.shuffle(S_matrix)
         return S_matrix
 
-
+    def get_k_mode_marginal_distances_of_greedy_matrix(
+        self, 
+        S_matrix: np.ndarray, 
+        k_order: int, 
+        marginals: np.ndarray
+    ) -> np.ndarray:
+        """Returns the variation distance of 'chained' k-mode marginals with respect
+        to the given ideal marginals."""
+        final_row_submatrix_indices = [self._get_submatrix_indices(S_matrix.shape, k_order, i)[-1] for i in range(len(marginals))]
+        distances = [0.5*np.sum(np.abs(self._get_marginal_variation_dist(S_matrix, final_row_submatrix_indices[i], marginals[i]))) for i in range(len(marginals))]
+        return np.array(distances)
