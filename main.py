@@ -28,3 +28,4 @@ with plt.style.context(['science']):
     plt.legend()
     plt.show()
     #plt.savefig('variation_dist.png', dpi=400)
+    
