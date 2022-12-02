@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from GBS_marginals import Marginal
 from greedy import Greedy
 
 marginals = np.array(
@@ -27,3 +29,38 @@ with plt.style.context(['science']):
     plt.legend()
     plt.show()
     #plt.savefig('variation_dist.png', dpi=400)
+
+r_k = np.array([
+1.6518433645720738,
+1.687136454610338,
+1.62938385974034,
+1.706029877650956,
+1.8395638626723685,
+1.3943570412472834,
+1.4819924169286014,
+1.6313980669381827,
+1.6559961541267325,
+1.3389267197532349,
+1.568736620327057,
+1.6772334549978614,
+1.459031307907052,
+1.4124223294979523,
+1.3440269631323098,
+1.4328684458997072,
+1.4675334685180914,
+1.6270874674912998,
+1.6044404863902908,
+1.581538415101846,
+1.6519035066626184,
+1.5456532234514821,
+1.5974577318822245,
+1.7043797524114164,
+1.7294783286655087])
+
+T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
+T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
+T = T_re + T_im * 1j
+T = T.T
+
+empirical_sigma = Marginal().get_sigma(T, r_k)
+print(Marginal().get_marginal_distribution([0,2], empirical_sigma))
