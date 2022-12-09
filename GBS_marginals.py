@@ -31,33 +31,35 @@ class Marginal:
         S = np.concatenate((S_firstcolumn,S_secondcolumn),axis = 1)
         return S  
 
-    def get_sigma_in(self, S: np.ndarray) -> np.ndarray:
+    def get_input_covariance_matrix(self, S: np.ndarray) -> np.ndarray:
         """Returns the matrix sigma_in needed to obtain the covariance matrix."""
         sigma_vac = np.identity(len(S))/2
         return S*sigma_vac*S.T
         
-    def get_sigma(self, T: np.ndarray, r_k: np.ndarray) -> np.ndarray:
-        """Returns the covariance matrix of a GBS experiment defined by the
-        input transformation matrix T and the input squeezing parameters r_k."""
-        sigma_in = self.get_sigma_in(self.get_S(r_k))
-        T_len, T_height = np.shape(T)
-        TT_len, TT_height = np.shape(T.T)
-        first = np.zeros((T_len * 2, T_height * 2))
+    def get_output_covariance_matrix(self, matrix: np.ndarray, r_k: np.ndarray) -> np.ndarray:
+        """Returns the covariance matrix of a GBS experiment defined by a matrix (the
+        transformation matrix T or the ideal unitary matrix of the interferometer) and
+        the squeezing parameters r_k."""
+        sigma_in = self.get_input_covariance_matrix(self.get_S(r_k))
+        m_len, m_height = np.shape(matrix)
+        m_transpose_len, m_transpose_height = np.shape(matrix.T)
+        first = np.zeros((m_len * 2, m_height * 2))
         second = first.T
-        first[0:T_len, 0:T_height] = T
-        first[T_len:, T_height:] = T.conjugate()
-        second[0:TT_len, 0:TT_height] = T.T.conjugate()
-        second[TT_len:, TT_height:] = T.T
-        return np.identity(T_len*2) - 1/2 * np.dot(first, second) + np.dot(first,np.dot(sigma_in,second)) 
+        first[0:m_len, 0:m_height] = matrix
+        first[m_len:, m_height:] = matrix.conjugate()
+        second[0:m_transpose_len, 0:m_transpose_height] = matrix.T.conjugate()
+        second[m_transpose_len:, m_transpose_height:] = matrix.T
+        if np.allclose(matrix.dot(matrix.conj().T), np.identity(matrix.shape[0]), atol=1e-12):
+            return np.dot(first, np.dot(sigma_in, second))
+        else:
+            return np.identity(m_len*2) - 1/2 * np.dot(first, second) + np.dot(first,np.dot(sigma_in,second)) 
 
     def get_reduced_matrix(self, sigma: np.ndarray, R: List) -> np.ndarray:
         '''
         Parameters
         ----------
-        sigma: matrix
-            full covariance matrix
-        R:  1d list
-            mode indices considered
+        sigma: covariance matrix
+        R: mode indices considered
 
         Returns the reduced matrix associated with the input mode indices.
         '''

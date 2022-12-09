@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from GBS_marginals import Marginal
 from greedy import Greedy
+from scipy.stats import unitary_group
 
 marginals = np.array(
     [[0.2, 0.25, 0.3, 0.25],
@@ -27,10 +28,10 @@ with plt.style.context(['science']):
     plt.ylabel('Variation distance')
     plt.xticks(marginal_index)
     plt.legend()
-    plt.show()
+    #plt.show()
     #plt.savefig('variation_dist.png', dpi=400)
 
-r_k = np.array([
+r_k = [
 1.6518433645720738,
 1.687136454610338,
 1.62938385974034,
@@ -55,12 +56,16 @@ r_k = np.array([
 1.5456532234514821,
 1.5974577318822245,
 1.7043797524114164,
-1.7294783286655087])
+1.7294783286655087]
+
+r_k = np.array(r_k + r_k)
 
 T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
 T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
 T = T_re + T_im * 1j
 T = T.T
 
-empirical_sigma = Marginal().get_sigma(T, r_k)
+ideal_T_matrix = unitary_group.rvs(100)
+
+empirical_sigma = Marginal().get_output_covariance_matrix(ideal_T_matrix, r_k)
 print(Marginal().get_marginal_distribution([0,2], empirical_sigma))
