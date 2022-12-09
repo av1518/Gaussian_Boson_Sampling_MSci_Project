@@ -58,14 +58,13 @@ r_k = [
 1.7043797524114164,
 1.7294783286655087]
 
-r_k = np.array(r_k + r_k)
+#r_k = np.array(r_k + r_k)
 
 T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
 T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
 T = T_re + T_im * 1j
 T = T.T
 
-ideal_T_matrix = unitary_group.rvs(100)
+ideal_matrix = unitary_group.rvs(50)
 
-empirical_sigma = Marginal().get_output_covariance_matrix(ideal_T_matrix, r_k)
-print(Marginal().get_marginal_distribution([0,2], empirical_sigma))
+print(Marginal().get_marginal_distribution([1,2], ideal_matrix, r_k))

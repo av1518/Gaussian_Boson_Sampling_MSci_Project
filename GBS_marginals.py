@@ -16,7 +16,8 @@ class Marginal:
         return np.array([[np.sinh(r), 0], [0,np.sinh(r)]])
 
     def get_S(self, r_k: np.ndarray) -> np.ndarray:
-        """Returns the squeezing matrix."""
+        """Returns the squeezing matrix for the two-mode squeezing parameters
+        r_k (following the construction of Google's paper)."""
         Ns = len(r_k)*2
         S_ch = np.zeros((Ns,Ns))
         S_sh = np.zeros((Ns,Ns))
@@ -37,9 +38,9 @@ class Marginal:
         return S*sigma_vac*S.T
         
     def get_output_covariance_matrix(self, matrix: np.ndarray, r_k: np.ndarray) -> np.ndarray:
-        """Returns the covariance matrix of a GBS experiment defined by a matrix (the
-        transformation matrix T or the ideal unitary matrix of the interferometer) and
-        the squeezing parameters r_k."""
+        """Returns the covariance matrix of a GBS experiment defined by an interferometer
+        matrix (the transformation matrix T or an ideal unitary matrix) and the squeezing
+        parameters r_k."""
         sigma_in = self.get_input_covariance_matrix(self.get_S(r_k))
         m_len, m_height = np.shape(matrix)
         m_transpose_len, m_transpose_height = np.shape(matrix.T)
@@ -72,24 +73,41 @@ class Marginal:
                 sigma_red[r_index, c_index] = sigma[row, column]
         return sigma_red
 
+    def get_prob_all_zero_bitstring(self, cov_matrix: np.ndarray) -> float:
+        """Calculates the probability of the outcome with no photon detections from
+        the overlap integral between the Wigner function of the output state of the
+        GBS experiment (squeezed coherent) and the Wigner function of the vacuum state. 
+        The covariance matrix of the vacuum state is the identity, and the product of
+        two gaussians results in a gaussian with a covariance matrix which is of the
+        form of the variable new_cov_matrix defined below."""
+        dim = cov_matrix.shape[0]
+        new_cov_matrix = np.dot(cov_matrix, np.linalg.inv(cov_matrix + np.identity(dim)))
+        factor = 1/(2*np.pi*np.sqrt(np.linalg.norm(new_cov_matrix)))
+        return factor*np.sqrt(np.linalg.norm(2*np.pi*new_cov_matrix))
+
     def get_single_outcome_probability(self, bitstring: Tuple, sigma: np.ndarray) -> float:
         """Return probability of a single output detection pattern
         in a GBS experiment defined by the squeezing parameters and
         the transformation matrix (which determine sigma)."""
         set_S = get_click_indices(bitstring)
         if not set_S:
-            O_s = np.random.rand(sigma.shape[0], sigma.shape[0])
-            #O_s = np.identity(sigma.shape[0])
+            return self.get_prob_all_zero_bitstring(sigma)
         else:
             sigma_inv_reduced = self.get_reduced_matrix(np.linalg.inv(sigma), set_S)
             O_s = np.identity(sigma_inv_reduced.shape[0]) - sigma_inv_reduced
-        return tor(O_s) / np.sqrt(np.linalg.norm(sigma))
+            return tor(O_s) / np.sqrt(np.linalg.norm(sigma))
 
-    def get_marginal_distribution(self, mode_indices: List, sigma: np.ndarray) -> np.ndarray:
+    def get_marginal_distribution(
+        self,
+        mode_indices: List,
+        interferometer_matrix: np.ndarray,
+        r_k: np.ndarray
+    ) -> np.ndarray:
         """Returns marginal distribution of the specified modes."""
+        cov_matrix = self.get_output_covariance_matrix(interferometer_matrix, r_k)
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
-        reduced_sigma = self.get_reduced_matrix(sigma, mode_indices)
+        reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
         distr = [self.get_single_outcome_probability(string, reduced_sigma) for string in binary_basis]
         return np.array(distr)
 
