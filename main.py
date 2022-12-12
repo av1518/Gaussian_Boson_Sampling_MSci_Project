@@ -65,6 +65,7 @@ T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
 T = T_re + T_im * 1j
 T = T.T
 
-ideal_matrix = unitary_group.rvs(50)
+A = np.random.normal(0, 1, (50, 50))
+A = A + A.T
 
-print(Marginal().get_marginal_distribution([1,2], T, r_k))
+print(Marginal().get_marginal_distribution([1,7], T, r_k))
