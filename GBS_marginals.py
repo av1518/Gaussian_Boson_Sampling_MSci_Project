@@ -82,8 +82,8 @@ class Marginal:
         form of the variable new_cov_matrix defined below."""
         dim = cov_matrix.shape[0]
         new_cov_matrix = np.dot(cov_matrix, np.linalg.inv(cov_matrix + np.identity(dim)))
-        factor = 1/(2*np.pi*np.sqrt(np.linalg.norm(new_cov_matrix)))
-        return factor*np.sqrt(np.linalg.norm(2*np.pi*new_cov_matrix))
+        factor = (1/(2*np.pi*np.sqrt(np.linalg.det(new_cov_matrix))))**2
+        return factor*np.sqrt(2*np.pi/np.linalg.det(np.linalg.inv(new_cov_matrix)))
 
     def get_single_outcome_probability(self, bitstring: Tuple, sigma: np.ndarray) -> float:
         """Return probability of a single output detection pattern

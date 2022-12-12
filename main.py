@@ -67,4 +67,4 @@ T = T.T
 
 ideal_matrix = unitary_group.rvs(50)
 
-print(Marginal().get_marginal_distribution([1,2], ideal_matrix, r_k))
+print(Marginal().get_marginal_distribution([1,2], T, r_k))
