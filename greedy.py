@@ -29,7 +29,13 @@ class Greedy():
         counts = [count_dict.get(i, 0) for i in range(2**len(samples[0]))]
         distribution = np.array(counts) / np.sum(counts)
         return distribution
-    
+
+
+    def _get_marginal_distribution_from_outcomes(self, marginals, samples: np.ndarry) -> np.ndarray:
+        '''Turns list of outcomes (bitstrings) into empiral marginal distributions of input marginals'''
+        reduced_outcomes = samples[:,marginals]
+        return self._get_distribution_from_outcomes(reduced_outcomes)
+        
     def _get_marginal_variation_dist(
         self,
         matrix: np.ndarray,

@@ -4,9 +4,6 @@ import copy
 from thewalrus import tor
 from utils import get_click_indices, get_binary_basis
 
-google_T = 
-
-
 class Marginal:
 
     def Ch(self, r: float) -> np.ndarray:
