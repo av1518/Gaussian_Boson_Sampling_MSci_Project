@@ -1,0 +1,36 @@
+#%%
+import strawberryfields as sf
+from strawberryfields.apps import sample
+from strawberryfields.apps import data
+import numpy as np
+from scipy.stats import unitary_group
+from greedy import Greedy
+#%% Generate samples from a random 4-dimensional symmetrix matrix
+modes = 4
+n_mean = 6
+samples = 5
+
+A = np.random.normal(0, 1, (modes, modes))
+A = A + A.T
+
+# A = ideal_matrix = unitary_group.rvs(4) #doesn't give symmetric matrix( only unitary)
+
+
+#%%
+
+samples = 500
+gbs_samples = sample.sample(A, n_mean, samples, threshold=True)
+#%%
+marginals = [0,1]
+c = Greedy()
+gbs_samples = np.array(gbs_samples)
+prob_distribution = c._get_distribution_from_outcomes(gbs_samples[:, marginals])
+print(prob_distribution)
+print(sum(prob_distribution))
+
+#%%
+
+c = Greedy()
+gbs_samples = np.array(gbs_samples)
+prob_distribution = c._get_marginal_distribution_from_outcomes([1,0],gbs_samples)
+print(prob_distribution)

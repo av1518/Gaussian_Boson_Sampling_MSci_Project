@@ -4,15 +4,14 @@ import copy
 from thewalrus import tor
 from utils import get_click_indices, get_binary_basis
 
-
 class Marginal:
 
     def Ch(self, r: float) -> np.ndarray:
-        """Returns Ch submatrix of the squeezing matrix."""
+        """Returns Ch submatrix of the squeezing vector."""
         return np.array([[np.cosh(r), 0], [0,np.cosh(r)]])
 
     def Sh(self, r: float) -> np.ndarray:
-        """Returns Sh submatrix of the squeezing matrix."""
+        """Returns Sh submatrix of the squeezing vector."""
         return np.array([[np.sinh(r), 0], [0,np.sinh(r)]])
 
     def get_S(self, r_k: np.ndarray) -> np.ndarray:
@@ -50,9 +49,11 @@ class Marginal:
         first[m_len:, m_height:] = matrix.conjugate()
         second[0:m_transpose_len, 0:m_transpose_height] = matrix.T.conjugate()
         second[m_transpose_len:, m_transpose_height:] = matrix.T
+        #check if T is unitary, if not -> google paper's way
         if np.allclose(matrix.dot(matrix.conj().T), np.identity(matrix.shape[0]), atol=1e-12):
             return np.dot(first, np.dot(sigma_in, second))
         else:
+            #google equation
             return np.identity(m_len*2) - 1/2 * np.dot(first, second) + np.dot(first,np.dot(sigma_in,second)) 
 
     def get_reduced_matrix(self, sigma: np.ndarray, R: List) -> np.ndarray:
