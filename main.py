@@ -4,6 +4,9 @@ import pandas as pd
 from GBS_marginals import Marginal
 from greedy import Greedy
 from scipy.stats import unitary_group
+from ideal_gbs_simulation import GBS_simulation
+
+#%% Test greedy algorithm
 
 marginals = np.array(
     [[0.2, 0.25, 0.3, 0.25],
@@ -30,6 +33,8 @@ with plt.style.context(['science']):
     plt.legend()
     #plt.show()
     #plt.savefig('variation_dist.png', dpi=400)
+
+#%% Test theoretical calculation of marginal distributions
 
 r_k = [
 1.6518433645720738,
@@ -59,13 +64,27 @@ r_k = [
 1.7294783286655087]
 
 #r_k = np.array(r_k + r_k)
-
+r_k = np.random.uniform(0.05, 0.15, 25)
 T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
 T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
 T = T_re + T_im * 1j
 T = T.T
+U = unitary_group.rvs(50)
 
-A = np.random.normal(0, 1, (50, 50))
-A = A + A.T
+ideal_marg = Marginal().get_marginal_distribution([1,7], U, r_k)
+noisy_marg = Marginal().get_marginal_distribution([1,7], T, r_k)
 
-print(Marginal().get_marginal_distribution([1,7], T, r_k))
+print('Ideal marginal:', ideal_marg)
+print('Sum of ideal marginal:', sum(ideal_marg))
+print('Noisy marginal:', noisy_marg)
+print('Sum of noisy marginal:', sum(noisy_marg))
+
+#%% Test calculation of marginals from simulation
+
+n_modes = 3
+cutoff = 10
+squeezing_params = np.random.uniform(0.4, 0.6, n_modes)
+unitary = unitary_group.rvs(n_modes)
+
+simul = GBS_simulation()
+print('Marginal from simulation:', simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1]))
