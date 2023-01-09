@@ -4,7 +4,7 @@ import pandas as pd
 from GBS_marginals import Marginal
 from greedy import Greedy
 from scipy.stats import unitary_group
-from ideal_gbs_simulation import GBS_simulation
+from gbs_simulation import GBS_simulation
 
 #%% Test greedy algorithm
 
@@ -73,6 +73,7 @@ print('Sum of noisy marginal:', sum(noisy_marg))
 
 #%% Test calculation of marginals from simulation
 
+k_order = 2
 n_modes = 3
 cutoff = 10
 squeezing_params = np.random.uniform(0.4, 0.6, n_modes)
@@ -80,3 +81,5 @@ unitary = unitary_group.rvs(n_modes)
 
 simul = GBS_simulation()
 print('Marginal from simulation:', simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1]))
+margs = Greedy().get_marginals_from_simulation(n_modes, cutoff, squeezing_params, unitary, 2)
+print(Greedy().get_S_matrix(n_modes, 20, k_order, margs))
