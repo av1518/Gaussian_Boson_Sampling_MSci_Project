@@ -167,37 +167,4 @@ class Greedy():
         distances = [0.5*np.sum(np.abs(self._get_marginal_variation_dist(S_matrix, final_row_submatrix_indices[i], chain_marginals[i]))) for i in range(len(chain_marginals))]
         return np.array(distances)
 
-    def get_marginals_from_simulation(
-        self,
-        n_modes: int,
-        fock_cutoff: int,
-        squeezing_params: np.ndarray,
-        unitary: np.ndarray,
-        k_order: int
-    ) -> np.ndarray:
-        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
-        Fields simulation of a GBS experiment with the given number of modes, squeezing
-        parameters and unitary matrix (defining the interferometer). The fock cutoff defines
-        the truncation of the fock basis in the simulation."""
-        comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
-        marginals : List = []
-        for modes in comb:
-            marg = GBS_simulation().get_ideal_marginal(n_modes, fock_cutoff, squeezing_params, unitary, modes)
-            marginals.append([modes, marg])
-        formatted_marginals = self.format_marginals(marginals, n_modes)
-        return formatted_marginals
     
-    def format_marginals(self, marginals: List, n_modes: int) -> List:
-        """Format ground-truth marginals so that they can be used as inputs of the 
-        greedy algorithm."""
-        k_order = len(marginals[0][0])
-        formatted_marg : List = []
-        for j in range(k_order - 1, n_modes):
-            to_join: List = []
-            for elem in marginals:
-                last_mode_index = elem[0][-1]
-                if last_mode_index == j:
-                    to_join.append(elem)
-            formatted_marg.append(to_join)
-        return formatted_marg
-        

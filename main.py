@@ -5,6 +5,7 @@ from GBS_marginals import Marginal
 from greedy import Greedy
 from scipy.stats import unitary_group
 from gbs_simulation import GBS_simulation
+from tqdm import tqdm
 
 #%% Test greedy algorithm
 
@@ -75,11 +76,28 @@ print('Sum of noisy marginal:', sum(noisy_marg))
 
 k_order = 2
 n_modes = 3
-cutoff = 10
+cutoff = 7
 squeezing_params = np.random.uniform(0.4, 0.6, n_modes)
 unitary = unitary_group.rvs(n_modes)
 
 simul = GBS_simulation()
-print('Marginal from simulation:', simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1]))
-margs = Greedy().get_marginals_from_simulation(n_modes, cutoff, squeezing_params, unitary, 2)
-print(Greedy().get_S_matrix(n_modes, 20, k_order, margs))
+ideal_marg = simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1])
+ideal_full_distr = simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes)))
+marg_dists = []
+full_dists = []
+angles = np.linspace(0, np.pi, 30)
+for angle in tqdm(angles):
+   noisy_marg = simul.get_noisy_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1], angle)
+   noisy_full_distr = simul.get_noisy_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes)), angle)
+   marg_dist = 0.5*np.sum(np.abs(np.array(ideal_marg) - np.array(noisy_marg)))
+   full_dist = 0.5*np.sum(np.abs(np.array(ideal_full_distr) - np.array(noisy_full_distr)))
+   marg_dists.append(marg_dist)
+   full_dists.append(full_dist)
+
+plt.figure()
+plt.plot(angles, marg_dists, label= 'Marginal distances')
+plt.plot(angles, full_dists, label= 'Full distr. distances')
+plt.xlabel('Angle (loss)')
+plt.ylabel('Variation distance')
+plt.legend()
+plt.show()
