@@ -3,7 +3,6 @@ from typing import List, Tuple
 import numpy as np
 from collections import Counter
 from utils import bitstring_to_int, int_to_padded_bitstring
-from gbs_simulation import GBS_simulation
 from itertools import combinations
 
 
@@ -24,7 +23,7 @@ class Greedy():
         reshaped_inds = reshaped_inds.reshape(shape[0], k_order)
         return reshaped_inds
 
-    def _get_distribution_from_outcomes(self, samples: np.ndarray) -> np.ndarray:
+    def get_distribution_from_outcomes(self, samples: np.ndarray) -> np.ndarray:
         """Turns list of outcomes (bitstrings) into empirical distribution."""
         bitstrings = [tuple(x) for x in samples]
         sorted_decimal_list = np.sort([bitstring_to_int(binary) for binary in bitstrings])
@@ -47,9 +46,8 @@ class Greedy():
         k_order = len(bit_indices)
         column_inds = [bit_indices[j][1] for j in range(k_order)]
         submatrix = matrix[0 : row_index + 1, column_inds]
-        empirical_distr = self._get_distribution_from_outcomes(submatrix)
-        variation_distance = ideal_marginal - empirical_distr
-        return variation_distance
+        empirical_distr = self.get_distribution_from_outcomes(submatrix)
+        return 0.5*np.sum(np.abs(ideal_marginal - empirical_distr))
     
     def _get_optimal_bitstring_in_decimal_for_first_column(
         self,
@@ -64,7 +62,7 @@ class Greedy():
             bitstring = int_to_padded_bitstring(j, len(bit_indices))
             for i, bit in enumerate(bitstring):
                 S_matrix_copy[bit_indices[i]] = bit
-            variation_distance = 0.5*np.sum(np.abs(self._get_marginal_variation_dist(S_matrix_copy, bit_indices, ideal_distrs[0][1])))
+            variation_distance = self._get_marginal_variation_dist(S_matrix_copy, bit_indices, ideal_distrs[0][1])
             dists.append(variation_distance)
         optimal_ind = np.argmin(dists)
         return optimal_ind
@@ -91,7 +89,7 @@ class Greedy():
                 column_inds = ideal_distrs[i][0]
                 marginal = ideal_distrs[i][1]
                 indices = [(row_index,) + (ind,) for ind in column_inds]
-                variation_distance += 0.5*np.sum(np.abs(self._get_marginal_variation_dist(S_matrix_copy, indices, marginal)))
+                variation_distance += self._get_marginal_variation_dist(S_matrix_copy, indices, marginal)
             dists.append(variation_distance)
         optimal_ind = possible_inds[np.argmin(dists)]
         return optimal_ind
@@ -115,6 +113,23 @@ class Greedy():
         bitstring = int_to_padded_bitstring(optimal_ind, len(bit_indices))
         for i, bit in enumerate(bitstring):
             S_matrix[bit_indices[i]] = bit
+    
+    def _format_marginals(self, marginals: List, n_modes: int) -> List:
+        """Format ground-truth marginals so that they can be used as inputs of the 
+        greedy algorithm. Take a list of all possible k-order combinations of mode
+        indices and reshape it such that the i-th element of the formatted marginals 
+        includes all of the marginals to be considered in the i-th iteration of the
+        greedy algorithm."""
+        k_order = len(marginals[0][0])
+        formatted_marg : List = []
+        for j in range(k_order - 1, n_modes):
+            to_join: List = []
+            for elem in marginals:
+                last_mode_index = elem[0][-1]
+                if last_mode_index == j:
+                    to_join.append(elem)
+            formatted_marg.append(to_join)
+        return formatted_marg
 
     def get_S_matrix(
         self, 
@@ -133,13 +148,13 @@ class Greedy():
         iii) shuffle submatrix and increment iteration number
 
         The ground truth marginals are given in an array such that the jth
-        element of that array contains a subarray with the marginals to be
-        considered in that iteration, that is (k + j - 2) C (k) marginals,
-        preceded by the indices of their corresponding columns
-        e.g. for a k-th order approximation, the array containing the
-        marginals has j subarrays. Each of these subarrays has two elements,
-        a list with the column/mode indices and the marginal distribution.
+        element of that array is a list with two elements: the first is a list
+        with the corresponding mode indices of that marginal, and the second 
+        one is a list with the marginal distribution. The marginal combinations
+        are ordered as in the combinations function of itertools e.g. [0,1],
+        [0,2], [1,2].
         """
+        marginals = self._format_marginals(marginals, n_modes)
         assert (len(marginals) == n_modes - 1)
         for data in marginals:
             for d in data:
@@ -154,17 +169,17 @@ class Greedy():
             np.random.shuffle(S_matrix)
         return S_matrix
 
-    def get_k_mode_marginal_distances_of_greedy_matrix(
+    def get_marginal_distances_of_greedy_matrix(
         self, 
         S_matrix: np.ndarray, 
         k_order: int, 
-        chain_marginals: np.ndarray
+        marginals: np.ndarray
     ) -> np.ndarray:
-        """Returns the variation distance of 'chained' k-mode marginals with respect
+        """Returns the variation distance of k-mode marginals with respect
         to the given ideal marginals."""
         n_modes = S_matrix.shape[1]
-        final_row_submatrix_indices = [self._get_submatrix_indices(S_matrix.shape, k_order, i)[-1] for i in range(n_modes - 1)]
-        distances = [0.5*np.sum(np.abs(self._get_marginal_variation_dist(S_matrix, final_row_submatrix_indices[i], chain_marginals[i]))) for i in range(len(chain_marginals))]
-        return np.array(distances)
-
-    
+        L = S_matrix.shape[0]
+        comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
+        final_row_inds = [[(L, i) for i in c] for c in comb]
+        distances = [[comb[i], self._get_marginal_variation_dist(S_matrix, final_row_inds[i], marginals[i][1])] for i in range(len(marginals))]
+        return distances

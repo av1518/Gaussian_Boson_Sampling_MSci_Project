@@ -10,18 +10,12 @@ from tqdm import tqdm
 #%% Test greedy algorithm
 
 marginals = np.array(
-    [[
-        [[0,1], [0.25, 0.25, 0.25, 0.25]]
-     ],
-     [
-        [[0,2], [0.25, 0.25, 0.25, 0.25]],
-        [[1,2], [0.25, 0.25, 0.25, 0.25]]
-     ],
-     [
-        [[0,3], [0.25, 0.25, 0.25, 0.25]],
-        [[1,3], [0.25, 0.25, 0.25, 0.25]],
-        [[2,3], [0.25, 0.25, 0.25, 0.25]]
-     ]])
+    [[[0,1], [0.25, 0.25, 0.25, 0.25]],
+     [[0,2], [0.25, 0.25, 0.25, 0.25]],
+     [[1,2], [0.25, 0.25, 0.25, 0.25]],
+     [[0,3], [0.25, 0.25, 0.25, 0.25]],
+     [[1,3], [0.25, 0.25, 0.25, 0.25]],
+     [[2,3], [0.25, 0.25, 0.25, 0.25]]])
 n_modes = 4
 k_order = 2
 
@@ -72,17 +66,28 @@ print('Sum of ideal marginal:', sum(ideal_marg))
 print('Noisy marginal:', noisy_marg)
 print('Sum of noisy marginal:', sum(noisy_marg))
 
-#%% Test calculation of marginals from simulation
+#%% Replicate GBS using marginals obtained from simulation
 
 k_order = 2
 n_modes = 3
-cutoff = 7
-squeezing_params = np.random.uniform(0.4, 0.6, n_modes)
+cutoff = 4
+squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
 unitary = unitary_group.rvs(n_modes)
 
 simul = GBS_simulation()
+ideal_margs = simul.get_ideal_marginals_from_simulation(n_modes, cutoff, squeezing_params, unitary, k_order)
+S_matrix = Greedy().get_S_matrix(n_modes, 50, k_order, ideal_margs)
+greedy_marginal_dists = Greedy().get_marginal_distances_of_greedy_matrix(S_matrix, k_order, ideal_margs)
+print(greedy_marginal_dists)
+
+ideal_full_distr = np.array(simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
+greedy_full_dist = Greedy().get_distribution_from_outcomes(S_matrix)
+total_dist = 0.5*np.sum(np.abs(ideal_full_distr - greedy_full_dist))
+print(total_dist)
+
+#%% Compare noisy and ideal marginals and full distribution
+
 ideal_marg = simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1])
-ideal_full_distr = simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes)))
 marg_dists = []
 full_dists = []
 angles = np.linspace(0, np.pi, 30)

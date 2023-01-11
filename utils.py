@@ -26,3 +26,14 @@ def get_click_indices(bitstring: Tuple) -> List:
 def get_binary_basis(bit_number: int) -> List:
     """Returns complete binary basis for a given number of bits."""
     return [int_to_padded_bitstring(x, bit_number) for x in range(2**bit_number)]
+
+def convert_to_clicks(outcomes: List) -> List:
+    """Converts list of photon number patterns (tuples) into
+    click patterns i.e. only distinguish between detection or
+    no detection."""
+    mutable_outcomes = [list(y) for y in outcomes]
+    for outcome in mutable_outcomes:
+        for i, x in enumerate(outcome):
+            if x > 0:
+                outcome[i] = 1
+    return [tuple(y) for y in mutable_outcomes]
