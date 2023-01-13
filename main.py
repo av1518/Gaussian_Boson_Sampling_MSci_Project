@@ -51,12 +51,12 @@ r_k = [
 1.7294783286655087]
 
 #r_k = np.array(r_k + r_k)
-r_k = np.random.uniform(0.05, 0.15, 25)
-T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
-T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
-T = T_re + T_im * 1j
-T = T.T
-U = unitary_group.rvs(50)
+# r_k = np.random.uniform(0.05, 0.15, 25)
+# T_re = pd.read_excel('matrix_re.xlsx', header = None).to_numpy()
+# T_im = pd.read_excel('matrix_im.xlsx', header = None).to_numpy()
+# T = T_re + T_im * 1j
+# T = T.T
+# U = unitary_group.rvs(50)
 
 # ideal_marg = Marginal().get_marginal_distribution([1,7], U, r_k)
 # noisy_marg = Marginal().get_marginal_distribution([1,7], T, r_k)
@@ -118,3 +118,5 @@ ideal_marg_simul = simul.get_ideal_marginal(n_modes, 10, squeezing_params, unita
 print('Marginal from hafnian:', ideal_marg)
 print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
+
+#%%

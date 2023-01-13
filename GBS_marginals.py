@@ -45,8 +45,9 @@ class Marginal:
 
     def get_input_covariance_matrix(self, S: np.ndarray) -> np.ndarray:
         """Returns the matrix sigma_in needed to obtain the covariance matrix."""
-        sigma_vac = np.identity(len(S))/2
-        return np.dot(S, np.dot(sigma_vac, S.T))
+        sigma_vac = np.identity(len(S))/2 
+        return np.dot(S, np.dot(sigma_vac, S.T)) #S.T should have been S dagger, for real S
+        #For real squezing params, S == S.T
         
     def get_output_covariance_matrix(self, matrix: np.ndarray, r_k: np.ndarray) -> np.ndarray:
         """Returns the covariance matrix of a GBS experiment defined by an interferometer
@@ -55,7 +56,8 @@ class Marginal:
         sigma_in = self.get_input_covariance_matrix(self.get_S(r_k))
         m_len, m_height = np.shape(matrix)
         m_transpose_len, m_transpose_height = np.shape(matrix.T)
-        first = np.zeros((m_len * 2, m_height * 2))
+        
+        first = np.zeros((m_len * 2, m_height * 2), dtype = complex)
         second = first.T
         first[0:m_len, 0:m_height] = matrix
         first[m_len:, m_height:] = matrix.conjugate()
@@ -80,6 +82,22 @@ class Marginal:
         indices = copy.deepcopy(R)
         for i in R:         
             indices.append(int(i + len(sigma)/2))
+        sigma_red = np.empty((len(indices),len(indices)), dtype=complex)
+        for r_index, row in enumerate(indices):
+            for c_index, column in enumerate(indices):
+                sigma_red[r_index, c_index] = sigma[row, column]
+        return sigma_red
+
+    def get_reduced_B(self, sigma: np.ndarray, R: List) -> np.ndarray:
+        '''
+        Parameters
+        ----------
+        sigma: covariance matrix
+        R: mode indices considered
+
+        Returns the reduced matrix associated with the input mode indices.
+        '''
+        indices = copy.deepcopy(R)
         sigma_red = np.empty((len(indices),len(indices)), dtype=complex)
         for r_index, row in enumerate(indices):
             for c_index, column in enumerate(indices):
@@ -135,8 +153,10 @@ class Marginal:
             return self.get_prob_all_zero_bitstring(sigma)
         else:
             sigma_Q = sigma + 0.5*np.identity(len(sigma))
-            B_s = self.get_reduced_matrix(B_matrix, set_S)
-            return (np.abs(hafnian(B_s)))**2 / np.sqrt(np.linalg.det(sigma_Q))
+            B_s = self.get_reduced_B(B_matrix, set_S)
+            print('hafnian =', hafnian(B_s))
+            haf = hafnian(B_s)
+            return (haf*haf.conj()) / np.sqrt(np.linalg.det(sigma_Q))
 
     def get_marginal_distribution_from_tor(
         self,
@@ -163,7 +183,7 @@ class Marginal:
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
-        B_matrix = self.get_B_matrix(interferometer_matrix, r_k)
+        B_matrix = self.get_reduced_B(self.get_B_matrix(interferometer_matrix, r_k),mode_indices)
         distr = [self.get_single_outcome_probability(string, reduced_sigma, B_matrix).real for string in binary_basis]
         return np.array(distr)
 
