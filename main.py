@@ -81,9 +81,12 @@ greedy_marginal_dists = Greedy().get_marginal_distances_of_greedy_matrix(S_matri
 print(greedy_marginal_dists)
 
 ideal_full_distr = np.array(simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
+noisy_full_distr = np.array(simul.get_noisy_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
 greedy_full_dist = Greedy().get_distribution_from_outcomes(S_matrix)
-total_dist = 0.5*np.sum(np.abs(ideal_full_distr - greedy_full_dist))
-print(total_dist)
+ideal_total_dist = 0.5*np.sum(np.abs(ideal_full_distr - greedy_full_dist))
+noisy_total_dist = 0.5*np.sum(np.abs(noisy_full_distr - greedy_full_dist))
+print('Distance between ideal and greedy:', ideal_total_dist)
+print('Distance between noisy and greedy:', noisy_total_dist)
 
 #%% Compare noisy and ideal marginals and full distribution
 
