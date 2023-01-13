@@ -56,8 +56,12 @@ class Marginal:
         sigma_in = self.get_input_covariance_matrix(self.get_S(r_k))
         m_len, m_height = np.shape(matrix)
         m_transpose_len, m_transpose_height = np.shape(matrix.T)
+<<<<<<< HEAD
         
         first = np.zeros((m_len * 2, m_height * 2), dtype = complex)
+=======
+        first = np.zeros((m_len * 2, m_height * 2), dtype=complex)
+>>>>>>> 07bae821025c7846602ec5a0a04b4a04e8ca3928
         second = first.T
         first[0:m_len, 0:m_height] = matrix
         first[m_len:, m_height:] = matrix.conjugate()
