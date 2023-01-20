@@ -33,8 +33,8 @@ class Marginal:
         """Returns the squeezing matrix for the single-mode squeezing parameters
         r_k (following the construction of original GBS paper)."""
         N = len(r_k)
-        S_ch = np.zeros((N,N))
-        S_sh = np.zeros((N,N))
+        S_ch = np.zeros((N,N), dtype = complex)
+        S_sh = np.zeros((N,N), dtype = complex)
         for i, r in enumerate(r_k):
             S_ch[i,i] = np.cosh(r)
             S_sh[i,i] = np.sinh(r)
@@ -120,13 +120,37 @@ class Marginal:
         unitary: np.ndarray,
         squeezing_params: np.ndarray
     ) -> np.ndarray:
+        """Returns the B matrix outlined in the paper 'Gaussian Boson Sampling.'
+        This matrix defines a GBS experiment with a given unitary and squeezing 
+        paramters."""
         N = len(squeezing_params)
         S = np.zeros((N,N))
         for i, r in enumerate(squeezing_params):
             S[i,i] = np.tanh(r)
         return np.dot(unitary, np.dot(S, unitary.T))
 
-    def get_single_outcome_probability_tor(self, bitstring: Tuple, sigma: np.ndarray) -> float:
+    def get_A_matrix(
+        self,
+        cov_matrix: np.ndarray
+    ) -> np.ndarray:
+        """Returns the A matrix outlined in Kolthammer's paper 'Experimentally
+        finding dense subgraphs using a time-bin encoded GBS device.' This matrix
+        is obtained from the covariance matrix of the output state of a GBS
+        experiment."""
+        dim = len(cov_matrix)
+        X_matrix = np.zeros((dim, dim), dtype = complex)
+        X_matrix[0:int(dim/2), int(dim/2):] = np.identity(int(dim/2))
+        X_matrix[int(dim/2):, 0:int(dim/2)] = np.identity(int(dim/2))
+        Q_matrix = cov_matrix + np.identity(dim)/2
+        inverse_Q_matrix = np.linalg.inv(Q_matrix)
+        term = np.identity(dim) - inverse_Q_matrix
+        return np.dot(X_matrix, term)
+
+    def get_single_outcome_probability_tor(
+        self,
+        bitstring: Tuple,
+        sigma: np.ndarray
+    ) -> float:
         """Return probability of a single output detection pattern
         in a GBS experiment defined by the squeezing parameters and
         the transformation matrix (which determine sigma)."""
@@ -138,7 +162,7 @@ class Marginal:
             O_s = np.identity(len(sigma_inv_reduced)) - sigma_inv_reduced
             return tor(O_s) / np.sqrt(np.linalg.det(sigma))
     
-    def get_single_outcome_probability(
+    def get_single_outcome_probability_haf(
         self,
         bitstring: Tuple,
         sigma: np.ndarray, 
@@ -153,9 +177,27 @@ class Marginal:
         else:
             sigma_Q = sigma + 0.5*np.identity(len(sigma))
             B_s = self.get_reduced_B(B_matrix, set_S)
-            print('hafnian =', hafnian(B_s))
-            haf = hafnian(B_s)
-            return (haf*haf.conj()) / np.sqrt(np.linalg.det(sigma_Q))
+            if hafnian(B_s) == 0.0:
+                return 0
+            else:
+                haf = hafnian(B_s)
+                return (haf*haf.conj()) / np.sqrt(np.linalg.det(sigma_Q))
+        
+    def get_single_outcome_probability_kolt(
+        self,
+        bitstring: Tuple,
+        sigma: np.ndarray, 
+    ) -> float:
+        """Return probability of a single output detection pattern
+        in a GBS experiment defined by the squeezing parameters and
+        the transformation matrix (which determine sigma)."""
+        set_S = get_click_indices(bitstring)
+        if not set_S:
+            return self.get_prob_all_zero_bitstring(sigma)
+        else:
+            prob_0 = self.get_prob_all_zero_bitstring(sigma)
+            A_n = self.get_reduced_matrix(self.get_A_matrix(sigma), set_S)
+            return prob_0 * hafnian(A_n)
 
     def get_marginal_distribution_from_tor(
         self,
@@ -171,7 +213,7 @@ class Marginal:
         distr = [self.get_single_outcome_probability_tor(string, reduced_sigma).real for string in binary_basis]
         return np.array(distr)
     
-    def get_marginal_distribution(
+    def get_marginal_distribution_from_haf(
         self,
         mode_indices: List,
         interferometer_matrix: np.ndarray,
@@ -183,7 +225,24 @@ class Marginal:
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
         B_matrix = self.get_reduced_B(self.get_B_matrix(interferometer_matrix, r_k),mode_indices)
-        distr = [self.get_single_outcome_probability(string, reduced_sigma, B_matrix).real for string in binary_basis]
+        distr = [self.get_single_outcome_probability_haf(string, reduced_sigma, B_matrix).real for string in binary_basis]
+        return np.array(distr)
+    
+    def get_marginal_distribution_from_haf_kolt(
+        self,
+        mode_indices: List,
+        interferometer_matrix: np.ndarray,
+        r_k: np.ndarray
+    ) -> np.ndarray:
+        """Returns marginal distribution of the specified modes."""
+        cov_matrix = self.get_output_covariance_matrix(interferometer_matrix, r_k)
+        for i, value in np.ndenumerate(cov_matrix):
+            if value.imag < 10**(-16):
+                cov_matrix[i] = value.real + 0.j
+        k_order = len(mode_indices)
+        binary_basis = get_binary_basis(k_order)
+        reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
+        distr = [self.get_single_outcome_probability_kolt(string, reduced_sigma).real for string in binary_basis]
         return np.array(distr)
 
 

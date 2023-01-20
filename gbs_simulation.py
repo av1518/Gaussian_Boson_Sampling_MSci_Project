@@ -38,7 +38,7 @@ class GBS_simulation:
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
         return threshold_marginal
 
-    def get_ideal_marginal(
+    def get_ideal_marginal_from_simul(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -56,7 +56,7 @@ class GBS_simulation:
             ops.Interferometer(unitary) | q
         return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
     
-    def get_noisy_marginal(
+    def get_noisy_marginal_from_simul(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -94,7 +94,7 @@ class GBS_simulation:
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
-            marg = self.get_ideal_marginal(n_modes, fock_cutoff, squeezing_params, unitary, modes)
+            marg = self.get_ideal_marginal_from_simul(n_modes, fock_cutoff, squeezing_params, unitary, modes)
             marginals.append([modes, marg])
         return np.array(marginals)
     
@@ -114,7 +114,7 @@ class GBS_simulation:
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
-            marg = self.get_noisy_marginal(n_modes, fock_cutoff, squeezing_params, unitary, modes, theta)
+            marg = self.get_noisy_marginal_from_simul(n_modes, fock_cutoff, squeezing_params, unitary, modes, theta)
             marginals.append([modes, marg])
         return np.array(marginals)
         
