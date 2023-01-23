@@ -114,8 +114,8 @@ class Marginal:
         two gaussians results in a gaussian with a covariance matrix which is of the
         form of the variable new_cov_matrix defined below."""
         dim = cov_matrix.shape[0]
-        new_cov_matrix = np.dot(cov_matrix, np.linalg.inv(cov_matrix + np.identity(dim)))
-        factor = 1/(4*(np.pi**2)*np.sqrt(np.linalg.det(cov_matrix)))
+        new_cov_matrix = 2*np.dot(cov_matrix, np.linalg.inv(cov_matrix + 0.5*np.identity(dim)))
+        factor = 1/(4*(np.pi**2)*np.sqrt(0.5*np.linalg.det(cov_matrix)))
         return factor*np.sqrt(np.linalg.det(2*np.pi*new_cov_matrix))
     
     def get_B_matrix(
@@ -159,7 +159,8 @@ class Marginal:
         the transformation matrix (which determine sigma)."""
         set_S = get_click_indices(bitstring)
         if not set_S:
-            return self.get_prob_all_zero_bitstring(sigma)
+            cov_matrix = thewalrus.quantum.Covmat(sigma)
+            return self.get_prob_all_zero_bitstring(cov_matrix)
         else:
             sigma_inv_reduced = self.get_reduced_matrix(np.linalg.inv(sigma), set_S)
             O_s = np.identity(len(sigma_inv_reduced)) - sigma_inv_reduced
@@ -181,22 +182,6 @@ class Marginal:
             A_s = self.get_reduced_matrix(A_matrix, set_S)
             haf = hafnian(A_s)
             return haf / np.sqrt(np.linalg.det(sigma))
-        
-    def get_single_outcome_probability_kolt(
-        self,
-        bitstring: Tuple,
-        sigma: np.ndarray, 
-    ) -> float:
-        """Return probability of a single output detection pattern
-        in a GBS experiment defined by the squeezing parameters and
-        the transformation matrix (which determine sigma)."""
-        set_S = get_click_indices(bitstring)
-        if not set_S:
-            return self.get_prob_all_zero_bitstring(sigma)
-        else:
-            prob_0 = self.get_prob_all_zero_bitstring(sigma)
-            A_n = self.get_reduced_matrix(self.get_A_matrix(sigma), set_S)
-            return prob_0 * hafnian(A_n)
 
     def get_marginal_distribution_from_tor(
         self,
@@ -205,7 +190,7 @@ class Marginal:
         r_k: np.ndarray
     ) -> np.ndarray:
         """Returns marginal distribution of the specified modes."""
-        cov_matrix = self.get_output_covariance_matrix(interferometer_matrix, r_k)
+        cov_matrix = thewalrus.quantum.Qmat(self.get_cov_matrix_sf(interferometer_matrix, r_k))
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
@@ -230,41 +215,21 @@ class Marginal:
         A_matrix[dim:, dim:] = B_matrix.conjugate()
         distr = [self.get_single_outcome_probability_haf(string, reduced_sigma, A_matrix).real for string in binary_basis]
         return np.array(distr)
-    
-    def get_marginal_distribution_from_haf_kolt(
-        self,
-        mode_indices: List,
-        interferometer_matrix: np.ndarray,
-        r_k: np.ndarray
-    ) -> np.ndarray:
-        """Returns marginal distribution of the specified modes."""
-        cov_matrix = self.get_output_covariance_matrix(interferometer_matrix, r_k)
-        for i, value in np.ndenumerate(cov_matrix):
-            if value.imag < 10**(-16):
-                cov_matrix[i] = value.real + 0.j
-        k_order = len(mode_indices)
-        binary_basis = get_binary_basis(k_order)
-        reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
-        distr = [self.get_single_outcome_probability_kolt(string, reduced_sigma).real for string in binary_basis]
-        return np.array(distr)
 
-    def get_S_sf(self, 
+    def get_cov_matrix_sf(self,
+        U: np.ndarray, 
         r_k: np.ndarray,
-        U
     ) -> np.ndarray:
         '''Returns covariance matrix using sf built in method (builds
         the circuit first)'''
-
         if len(r_k) != len(U):
             raise Exception('r_k and U must have the same length')
         n_modes = len(r_k)
         p = sf.Program(n_modes)
-
         with p.context as q:
             for i, r in enumerate(r_k):
                 ops.Sgate(r) | q[i]
             ops.Interferometer(U) | q
-
         e = sf.Engine(backend = "gaussian")
         state = e.run(p).state
         sigma = state.cov()
