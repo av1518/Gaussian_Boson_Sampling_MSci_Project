@@ -24,3 +24,5 @@ print(sigma)
 
 print(thewalrus.quantum.is_valid_cov(sigma))
 
+
+# %%

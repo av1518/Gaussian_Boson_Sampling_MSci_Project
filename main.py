@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -123,3 +124,11 @@ print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
 
 #%%
+
+n_modes = 4
+squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
+unitary = unitary_group.rvs(n_modes)
+
+# %%
+
+s = Marginal().get_S_sf(squeezing_params,unitary)
