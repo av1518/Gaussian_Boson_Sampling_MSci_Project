@@ -6,6 +6,8 @@ from greedy import Greedy
 from scipy.stats import unitary_group
 from gbs_simulation import GBS_simulation
 from tqdm import tqdm
+import thewalrus
+import scipy as sp
 
 #%% Test greedy algorithm
 
@@ -19,7 +21,7 @@ marginals = np.array(
 n_modes = 4
 k_order = 2
 
-print(Greedy().get_S_matrix(n_modes, 20, k_order, marginals))
+# print(Greedy().get_S_matrix(n_modes, 20, k_order, marginals))
 
 #%% Test theoretical calculation of marginal distributions
 
@@ -112,12 +114,16 @@ print('Distance between noisy and greedy:', noisy_total_dist)
 
 #%%
 
-n_modes = 4
+n_modes = 2
 squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
 unitary = unitary_group.rvs(n_modes)
+sigma= Marginal().get_output_covariance_matrix(unitary, squeezing_params)
+quadrature_sigma =  thewalrus.quantum.Covmat(sigma)
+print(quadrature_sigma)
+print(thewalrus.quantum.is_valid_cov(quadrature_sigma))
 ideal_marg_haf = Marginal().get_marginal_distribution_from_haf([0,1], unitary, squeezing_params)
 ideal_marg_tor = Marginal().get_marginal_distribution_from_tor([0,1], unitary, squeezing_params)
-ideal_marg_simul = simul.get_ideal_marginal_from_simul(n_modes, 10, squeezing_params, unitary, [0,1])
+ideal_marg_simul = simul.get_ideal_marginal_from_simul(n_modes, 15, squeezing_params, unitary, [0,1])
 print('Marginal from hafnian:', ideal_marg_haf)
 print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
