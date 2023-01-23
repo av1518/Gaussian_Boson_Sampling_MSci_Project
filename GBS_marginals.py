@@ -268,9 +268,10 @@ class Marginal:
         e = sf.Engine(backend = "gaussian")
         state = e.run(p).state
         sigma = state.cov()
-        print(sigma)
-        print(thewalrus.quantum.is_valid_cov(sigma))
-        return sigma
+        if thewalrus.quantum.is_valid_cov(sigma) == True:
+            return sigma
+        else:
+            raise Exception('Covariance matrix not valid')
 
 
 
