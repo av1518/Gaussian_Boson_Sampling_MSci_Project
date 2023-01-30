@@ -6,6 +6,8 @@ from utils import get_click_indices, get_binary_basis
 import strawberryfields as sf
 import strawberryfields.ops as ops
 import thewalrus
+from itertools import combinations
+
 
 class Marginal:
 
@@ -159,8 +161,7 @@ class Marginal:
         the transformation matrix (which determine sigma)."""
         set_S = get_click_indices(bitstring)
         if not set_S:
-            cov_matrix = thewalrus.quantum.Covmat(sigma)
-            return self.get_prob_all_zero_bitstring(cov_matrix)
+            return 0.0
         else:
             sigma_inv_reduced = self.get_reduced_matrix(np.linalg.inv(sigma), set_S)
             O_s = np.identity(len(sigma_inv_reduced)) - sigma_inv_reduced
@@ -195,6 +196,7 @@ class Marginal:
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
         distr = [self.get_single_outcome_probability_tor(string, reduced_sigma).real for string in binary_basis]
+        distr[0] = 1 - np.sum(distr[1:])
         return np.array(distr)
     
     def get_marginal_distribution_from_haf(
@@ -237,6 +239,24 @@ class Marginal:
             return sigma
         else:
             raise Exception('Covariance matrix not valid')
+        
+    def get_ideal_marginals_from_torontonian(
+        self,
+        n_modes: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        k_order: int,
+    ) -> np.ndarray:
+        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
+        Fields simulation of a GBS experiment (incorporating optical loss) with the given number
+        of modes, squeezing parameters and the interferometer unitary. The fock cutoff defines
+        the truncation of the fock basis in the simulation."""
+        comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
+        marginals : List = []
+        for modes in comb:
+            marg = self.get_marginal_distribution_from_tor(modes, unitary, squeezing_params)
+            marginals.append([modes, marg])
+        return np.array(marginals)
 
 
 
