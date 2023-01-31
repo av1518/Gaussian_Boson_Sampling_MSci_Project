@@ -114,4 +114,3 @@ ideal_marg_tor = Marginal().get_marginal_distribution_from_tor([0,1], unitary, s
 ideal_marg_simul = simul.get_ideal_marginal_from_simul(n_modes, 15, squeezing_params, unitary, [0,1])
 print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
-
