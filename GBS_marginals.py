@@ -199,6 +199,22 @@ class Marginal:
         distr[0] = 1 - np.sum(distr[1:])
         return np.array(distr)
     
+    def get_noisy_marginal_distribution_from_tor(
+        self,
+        mode_indices: List,
+        interferometer_matrix: np.ndarray,
+        r_k: np.ndarray,
+        loss: float
+    ) -> np.ndarray:
+        """Returns marginal distribution of the specified modes."""
+        cov_matrix = thewalrus.quantum.Qmat(self.get_noisy_cov_matrix_sf(interferometer_matrix, r_k, loss))
+        k_order = len(mode_indices)
+        binary_basis = get_binary_basis(k_order)
+        reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
+        distr = [self.get_single_outcome_probability_tor(string, reduced_sigma).real for string in binary_basis]
+        distr[0] = 1 - np.sum(distr[1:])
+        return np.array(distr)
+    
     def get_marginal_distribution_from_haf(
         self,
         mode_indices: List,
@@ -239,6 +255,32 @@ class Marginal:
             return sigma
         else:
             raise Exception('Covariance matrix not valid')
+    
+    def get_noisy_cov_matrix_sf(self,
+        unitary: np.ndarray, 
+        squeezing_params: np.ndarray,
+        loss: float
+    ) -> np.ndarray:
+        '''Returns covariance matrix using sf built in method (builds
+        the circuit first)'''
+        if len(squeezing_params) != len(unitary):
+            raise Exception('r_k and U must have the same length')
+        n_modes = len(squeezing_params)
+        prog = sf.Program(2*n_modes)
+        with prog.context as q:
+            for i, s in enumerate(squeezing_params):
+                ops.Sgate(s) | q[i]
+            for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
+                cmd.op | cmd.reg
+            for i, qubit in enumerate(q[:n_modes]):
+                ops.BSgate(loss) | (qubit, q[n_modes + i]) 
+        eng = sf.Engine(backend = "gaussian")
+        state = eng.run(prog).state
+        sigma = state.cov()
+        if thewalrus.quantum.is_valid_cov(sigma) == True:
+            return sigma
+        else:
+            raise Exception('Covariance matrix not valid')
         
     def get_ideal_marginals_from_torontonian(
         self,
@@ -255,6 +297,25 @@ class Marginal:
         marginals : List = []
         for modes in comb:
             marg = self.get_marginal_distribution_from_tor(modes, unitary, squeezing_params)
+            marginals.append([modes, marg])
+        return np.array(marginals)
+    
+    def get_noisy_marginals_from_torontonian(
+        self,
+        n_modes: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        k_order: int,
+        loss: float
+    ) -> np.ndarray:
+        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
+        Fields simulation of a GBS experiment (incorporating optical loss) with the given number
+        of modes, squeezing parameters and the interferometer unitary. The fock cutoff defines
+        the truncation of the fock basis in the simulation."""
+        comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
+        marginals : List = []
+        for modes in comb:
+            marg = self.get_noisy_marginal_distribution_from_tor(modes, unitary, squeezing_params, loss)
             marginals.append([modes, marg])
         return np.array(marginals)
 

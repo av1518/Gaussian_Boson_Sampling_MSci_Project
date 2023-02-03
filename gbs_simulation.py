@@ -30,7 +30,7 @@ class GBS_simulation:
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(program)
         fock_ket = result.state.ket()
-        #print(f'Sum of all fock probabilities for cutoff {fock_cutoff}:', np.sum(result.state.all_fock_probs()))
+        print(f'Sum of all fock probabilities for cutoff {fock_cutoff}:', np.sum(result.state.all_fock_probs()))
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
         marginal = [self.get_fock_prob(fock_ket, target_modes, n) for n in outcomes]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
@@ -117,4 +117,27 @@ class GBS_simulation:
             marg = self.get_noisy_marginal_from_simul(n_modes, fock_cutoff, squeezing_params, unitary, modes, theta)
             marginals.append([modes, marg])
         return np.array(marginals)
-        
+    
+    def get_noisy_marginal_from_bosonic_simul(
+        self,
+        n_modes: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        target_modes: List,
+        theta: float = np.pi/4
+    ) -> List:
+        """Returns the marginal distribution of the target modes in a GBS simulation
+        (incorporating optical loss) parameterised by the squeezing parameters, the
+        interferometer unitary, the fock cut-off value and the number of modes."""
+        prog = sf.Program(2*n_modes)
+        with prog.context as q:
+            for i, s in enumerate(squeezing_params):
+                ops.Sgate(s) | q[i]
+            for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
+                cmd.op | cmd.reg
+            for i, qubit in enumerate(q[:n_modes]):
+                ops.BSgate(theta) | (qubit, q[n_modes + i]) 
+        eng = sf.Engine("bosonic")
+        result = eng.run(prog).state
+        return result.reduced_dm(target_modes)
+
