@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import numpy as np
 
 def int_to_bitstring(integer: int) -> Tuple[int, ...]:
     """Converts an integer into a bitstring."""
@@ -37,3 +38,7 @@ def convert_to_clicks(outcomes: List) -> List:
             if x > 0:
                 outcome[i] = 1
     return [tuple(y) for y in mutable_outcomes]
+
+def total_variation_distance(distr1: np.ndarray, distr2: np.ndarray) -> float:
+    """Returns total variation distance of two distributions."""
+    return 0.5*np.sum(np.abs(distr1 - distr2))
