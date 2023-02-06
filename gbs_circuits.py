@@ -30,3 +30,10 @@ def get_gbs_circuit_with_optical_loss(
         for i, qubit in enumerate(q[:n_modes]):
             ops.BSgate(loss) | (qubit, q[n_modes + i])
     return prog
+
+
+def get_gbs_circuit_with_gate_error(
+    unitary: np.ndarray,
+    std: float
+):
+    return none
