@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from GBS_marginals import Marginal
+from gbs_probabilities import TheoreticalProbabilities
 from greedy import Greedy
 from scipy.stats import unitary_group
 from gbs_simulation import GBS_simulation
@@ -70,47 +70,25 @@ squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
 unitary = unitary_group.rvs(n_modes)
 
 simul = GBS_simulation()
-ideal_margs = simul.get_ideal_marginals_from_simulation(n_modes, cutoff, squeezing_params, unitary, k_order)
+ideal_margs = simul.get_all_ideal_marginals_from_simulation(n_modes, cutoff, squeezing_params, unitary, k_order)
 S_matrix = Greedy().get_S_matrix(n_modes, 1000, k_order, ideal_margs)
 greedy_marginal_dists = Greedy().get_marginal_distances_of_greedy_matrix(S_matrix, k_order, ideal_margs)
 print(greedy_marginal_dists)
 
-ideal_full_distr = np.array(simul.get_ideal_marginal_from_simul(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
-noisy_full_distr = np.array(simul.get_noisy_marginal_from_simul(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
+ideal_full_distr = np.array(simul.get_ideal_marginal_from_simulation(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
+noisy_full_distr = np.array(simul.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes))))
 greedy_full_dist = Greedy().get_distribution_from_outcomes(S_matrix)
 ideal_total_dist = 0.5*np.sum(np.abs(ideal_full_distr - greedy_full_dist))
 noisy_total_dist = 0.5*np.sum(np.abs(noisy_full_distr - greedy_full_dist))
 print('Distance between ideal and greedy:', ideal_total_dist)
 print('Distance between noisy and greedy:', noisy_total_dist)
 
-#%% Compare noisy and ideal marginals and full distribution
-
-# ideal_marg = simul.get_ideal_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1])
-# marg_dists = []
-# full_dists = []
-# angles = np.linspace(0, np.pi, 30)
-# for angle in tqdm(angles):
-#    noisy_marg = simul.get_noisy_marginal(n_modes, cutoff, squeezing_params, unitary, [0,1], angle)
-#    noisy_full_distr = simul.get_noisy_marginal(n_modes, cutoff, squeezing_params, unitary, list(range(n_modes)), angle)
-#    marg_dist = 0.5*np.sum(np.abs(np.array(ideal_marg) - np.array(noisy_marg)))
-#    full_dist = 0.5*np.sum(np.abs(np.array(ideal_full_distr) - np.array(noisy_full_distr)))
-#    marg_dists.append(marg_dist)
-#    full_dists.append(full_dist)
-
-# plt.figure()
-# plt.plot(angles, marg_dists, label= 'Marginal distances')
-# plt.plot(angles, full_dists, label= 'Full distr. distances')
-# plt.xlabel('Angle (loss)')
-# plt.ylabel('Variation distance')
-# plt.legend()
-# plt.show()
-
 #%%
 
 n_modes = 2
 squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
 unitary = unitary_group.rvs(n_modes)
-ideal_marg_tor = Marginal().get_marginal_distribution_from_tor([0,1], unitary, squeezing_params)
-ideal_marg_simul = simul.get_ideal_marginal_from_simul(n_modes, 15, squeezing_params, unitary, [0,1])
+ideal_marg_tor = TheoreticalProbabilities().get_marginal_distribution_from_tor([0,1], unitary, squeezing_params)
+ideal_marg_simul = simul.get_ideal_marginal_from_simulation(n_modes, 15, squeezing_params, unitary, [0,1])
 print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
