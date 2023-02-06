@@ -2,7 +2,7 @@ import copy
 from typing import List, Tuple
 import numpy as np
 from collections import Counter
-from utils import bitstring_to_int, int_to_padded_bitstring
+from utils import bitstring_to_int, int_to_padded_bitstring, total_variation_distance
 from itertools import combinations
 
 
@@ -47,7 +47,7 @@ class Greedy():
         column_inds = [bit_indices[j][1] for j in range(k_order)]
         submatrix = matrix[0 : row_index + 1, column_inds]
         empirical_distr = self.get_distribution_from_outcomes(submatrix)
-        return 0.5*np.sum(np.abs(ideal_marginal - empirical_distr))
+        return total_variation_distance(ideal_marginal, empirical_distr)
     
     def _get_optimal_bitstring_in_decimal_for_first_column(
         self,
