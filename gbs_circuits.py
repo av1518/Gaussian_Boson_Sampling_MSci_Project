@@ -2,6 +2,7 @@ from typing import List
 import strawberryfields as sf
 from strawberryfields import ops
 import numpy as np
+from utils import complex_to_polar, apply_random_deviation
 
 def get_ideal_gbs_circuit(
     n_modes: int, 
@@ -36,4 +37,30 @@ def get_gbs_circuit_with_gate_error(
     unitary: np.ndarray,
     std: float
 ):
-    return none
+    '''Takes in unitary, decomposes it using rectangular decomosition into T*V*T_dash (see Kolt's paper)
+    then applies random deviations based on normal distribution with given standard deviation on gate
+    paramaters, and returns the deviated gate circuit'''
+    a = sf.decompositions.rectangular(unitary)
+    T = a[0]
+    V = complex_to_polar(a[1])
+    T_dash = a[2]
+
+    T_noisy = apply_random_deviation(T,std)
+    T_dash_noisy = apply_random_deviation(T_dash,std)
+
+    N = T[0][-1] #number of modes
+    noisy = sf.Program(N) #noisy gbs program
+    eng = sf.Engine("fock", backend_options={"cutoff_dim": 6}) #not sure if this line is needed
+    with noisy.context as q:
+        for i in range(N):
+            ops.Fock(1) | q[i]
+        for row in T_noisy: #j is a row in T
+            ops.Rgate(row[3]) | q[row[0]]
+            ops.BSgate(row[2], 0) | (q[row[0]], q[row[1]])
+        for j in range(len(V)):
+            ops.Rgate(V[j]) | q[j]
+        for row in reversed(T_dash_noisy): #take the last row first
+            ops.BSgate(-row[2],0) | (q[row[0]], q[row[1]])
+            ops.Rgate(-row[3]) | q[row[0]]
+    noisy.compile(compiler="fock").print()
+    return noisy
