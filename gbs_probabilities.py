@@ -4,12 +4,12 @@ import copy
 from thewalrus import tor, hafnian
 from utils import get_click_indices, get_binary_basis
 import strawberryfields as sf
-import strawberryfields.ops as ops
 import thewalrus
 from itertools import combinations
+from gbs_circuits import get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss
 
 
-class Marginal:
+class TheoreticalProbabilities:
 
     def Ch(self, r: float) -> np.ndarray:
         """Returns Ch submatrix of the squeezing vector."""
@@ -127,7 +127,7 @@ class Marginal:
     ) -> np.ndarray:
         """Returns the B matrix outlined in the paper 'Gaussian Boson Sampling.'
         This matrix defines a GBS experiment with a given unitary and squeezing 
-        paramters."""
+        parameters."""
         N = len(squeezing_params)
         S = np.zeros((N,N), dtype=complex)
         for i, r in enumerate(squeezing_params):
@@ -151,7 +151,36 @@ class Marginal:
         term = np.identity(dim) - inverse_Q_matrix
         return np.dot(X_matrix, term)
 
-    def get_single_outcome_probability_tor(
+    def get_cov_matrix_sf(self,
+        unitary: np.ndarray, 
+        squeezing_params: np.ndarray,
+    ) -> np.ndarray:
+        '''Returns covariance matrix using sf built-in method (builds
+        the circuit first)'''
+        if len(squeezing_params) != len(unitary):
+            raise Exception('r_k and U must have the same length')
+        n_modes = len(squeezing_params)
+        prog = get_ideal_gbs_circuit(n_modes, squeezing_params, unitary)
+        eng = sf.Engine(backend = "gaussian")
+        state = eng.run(prog).state
+        return state.cov()
+    
+    def get_noisy_cov_matrix_sf(self,
+        unitary: np.ndarray, 
+        squeezing_params: np.ndarray,
+        loss: float
+    ) -> np.ndarray:
+        '''Returns covariance matrix using sf built-in method (builds
+        the circuit first), but incorporating optical loss.'''
+        if len(squeezing_params) != len(unitary):
+            raise Exception('r_k and U must have the same length')
+        n_modes = len(squeezing_params)
+        prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss)
+        eng = sf.Engine(backend = "gaussian")
+        state = eng.run(prog).state
+        return state.cov()
+
+    def get_single_outcome_probability_from_tor(
         self,
         bitstring: Tuple,
         sigma: np.ndarray
@@ -161,13 +190,13 @@ class Marginal:
         the transformation matrix (which determine sigma)."""
         set_S = get_click_indices(bitstring)
         if not set_S:
-            return 0.0
+            return 0.0 # updated when the rest of the probabilities are calculated
         else:
             sigma_inv_reduced = self.get_reduced_matrix(np.linalg.inv(sigma), set_S)
             O_s = np.identity(len(sigma_inv_reduced)) - sigma_inv_reduced
             return tor(O_s) / np.sqrt(np.linalg.det(sigma))
     
-    def get_single_outcome_probability_haf(
+    def get_single_outcome_probability_from_haf(
         self,
         bitstring: Tuple,
         sigma: np.ndarray, 
@@ -190,12 +219,12 @@ class Marginal:
         interferometer_matrix: np.ndarray,
         r_k: np.ndarray
     ) -> np.ndarray:
-        """Returns marginal distribution of the specified modes."""
+        """Returns marginal distribution of the specified modes using the Torontonian."""
         cov_matrix = thewalrus.quantum.Qmat(self.get_cov_matrix_sf(interferometer_matrix, r_k))
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
-        distr = [self.get_single_outcome_probability_tor(string, reduced_sigma).real for string in binary_basis]
+        distr = [self.get_single_outcome_probability_from_tor(string, reduced_sigma).real for string in binary_basis]
         distr[0] = 1 - np.sum(distr[1:])
         return np.array(distr)
     
@@ -206,12 +235,12 @@ class Marginal:
         r_k: np.ndarray,
         loss: float
     ) -> np.ndarray:
-        """Returns marginal distribution of the specified modes."""
+        """Returns noisy marginal distribution of the specified modes using the Torontonian."""
         cov_matrix = thewalrus.quantum.Qmat(self.get_noisy_cov_matrix_sf(interferometer_matrix, r_k, loss))
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
         reduced_sigma = self.get_reduced_matrix(cov_matrix, mode_indices)
-        distr = [self.get_single_outcome_probability_tor(string, reduced_sigma).real for string in binary_basis]
+        distr = [self.get_single_outcome_probability_from_tor(string, reduced_sigma).real for string in binary_basis]
         distr[0] = 1 - np.sum(distr[1:])
         return np.array(distr)
     
@@ -221,7 +250,7 @@ class Marginal:
         interferometer_matrix: np.ndarray,
         r_k: np.ndarray
     ) -> np.ndarray:
-        """Returns marginal distribution of the specified modes."""
+        """Returns marginal distribution of the specified modes using the Hafnian."""
         cov_matrix = self.get_output_covariance_matrix(interferometer_matrix, r_k)
         k_order = len(mode_indices)
         binary_basis = get_binary_basis(k_order)
@@ -231,68 +260,18 @@ class Marginal:
         A_matrix = np.zeros((2*dim, 2*dim), dtype=complex)
         A_matrix[0:dim, 0:dim] = B_matrix
         A_matrix[dim:, dim:] = B_matrix.conjugate()
-        distr = [self.get_single_outcome_probability_haf(string, reduced_sigma, A_matrix).real for string in binary_basis]
+        distr = [self.get_single_outcome_probability_from_haf(string, reduced_sigma, A_matrix).real for string in binary_basis]
         return np.array(distr)
-
-    def get_cov_matrix_sf(self,
-        U: np.ndarray, 
-        r_k: np.ndarray,
-    ) -> np.ndarray:
-        '''Returns covariance matrix using sf built in method (builds
-        the circuit first)'''
-        if len(r_k) != len(U):
-            raise Exception('r_k and U must have the same length')
-        n_modes = len(r_k)
-        p = sf.Program(n_modes)
-        with p.context as q:
-            for i, r in enumerate(r_k):
-                ops.Sgate(r) | q[i]
-            ops.Interferometer(U) | q
-        e = sf.Engine(backend = "gaussian")
-        state = e.run(p).state
-        sigma = state.cov()
-        if thewalrus.quantum.is_valid_cov(sigma) == True:
-            return sigma
-        else:
-            raise Exception('Covariance matrix not valid')
-    
-    def get_noisy_cov_matrix_sf(self,
-        unitary: np.ndarray, 
-        squeezing_params: np.ndarray,
-        loss: float
-    ) -> np.ndarray:
-        '''Returns covariance matrix using sf built in method (builds
-        the circuit first)'''
-        if len(squeezing_params) != len(unitary):
-            raise Exception('r_k and U must have the same length')
-        n_modes = len(squeezing_params)
-        prog = sf.Program(2*n_modes)
-        with prog.context as q:
-            for i, s in enumerate(squeezing_params):
-                ops.Sgate(s) | q[i]
-            for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
-                cmd.op | cmd.reg
-            for i, qubit in enumerate(q[:n_modes]):
-                ops.BSgate(loss) | (qubit, q[n_modes + i]) 
-        eng = sf.Engine(backend = "gaussian")
-        state = eng.run(prog).state
-        sigma = state.cov()
-        if thewalrus.quantum.is_valid_cov(sigma) == True:
-            return sigma
-        else:
-            raise Exception('Covariance matrix not valid')
         
-    def get_ideal_marginals_from_torontonian(
+    def get_all_ideal_marginals_from_torontonian(
         self,
         n_modes: int,
         squeezing_params: np.ndarray,
         unitary: np.ndarray,
         k_order: int,
     ) -> np.ndarray:
-        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
-        Fields simulation of a GBS experiment (incorporating optical loss) with the given number
-        of modes, squeezing parameters and the interferometer unitary. The fock cutoff defines
-        the truncation of the fock basis in the simulation."""
+        """Returns the theoretical k-th order marginals of a GBS experiment with the given
+        number of modes, squeezing parameters, and the interferometer unitary."""
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
@@ -300,7 +279,7 @@ class Marginal:
             marginals.append([modes, marg])
         return np.array(marginals)
     
-    def get_noisy_marginals_from_torontonian(
+    def get_all_noisy_marginals_from_torontonian(
         self,
         n_modes: int,
         squeezing_params: np.ndarray,
@@ -308,10 +287,8 @@ class Marginal:
         k_order: int,
         loss: float
     ) -> np.ndarray:
-        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
-        Fields simulation of a GBS experiment (incorporating optical loss) with the given number
-        of modes, squeezing parameters and the interferometer unitary. The fock cutoff defines
-        the truncation of the fock basis in the simulation."""
+        """Returns the theoretical k-th order, noisy marginals of a GBS experiment with the given
+        number of modes, squeezing parameters, and the interferometer unitary."""
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
