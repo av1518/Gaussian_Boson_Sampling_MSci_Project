@@ -42,3 +42,30 @@ def convert_to_clicks(outcomes: List) -> List:
 def total_variation_distance(distr1: np.ndarray, distr2: np.ndarray) -> float:
     """Returns total variation distance of two distributions."""
     return 0.5*np.sum(np.abs(distr1 - distr2))
+
+def complex_to_polar(D_comp):
+    '''
+    D_comp == list of complex numbers (with r = 1)
+    Returns the polar angle
+    '''
+    angles = []
+    for i in D_comp:
+        _,phi = cmath.polar(i)
+        if phi < 0 :
+            phi = 2*np.pi + phi
+        angles.append(phi )
+    return angles
+
+def apply_random_deviation(input_matrix, standard_deviation):
+    '''Takes input matrix (nested lists) and applied a normal 
+    distribution deviation on the 3rd and 4th elements
+    (use in gate error model)'''
+    output_list = []
+    for sublist in input_matrix:
+        deviation_3 = np.random.normal(loc=0, scale=standard_deviation)
+        deviation_4 = np.random.normal(loc=0, scale=standard_deviation)
+        sublist_new = sublist.copy()
+        sublist_new[2] += deviation_3
+        sublist_new[3] += deviation_4
+        output_list.append(sublist_new)
+    return output_list
