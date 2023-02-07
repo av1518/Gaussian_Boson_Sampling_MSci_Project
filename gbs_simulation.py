@@ -114,31 +114,55 @@ class GBS_simulation:
             marginals.append([modes, marg])
         return np.array(marginals)
     
-    def get_noisy_marginal_from_bosonic_simul(
+    def turn_detections_into_projection_operators(
+        self, 
+        outcome: Tuple, 
+        cutoff: int
+    ) -> np.ndarray:
+        """Turn photon-detection patterns into their corresponding
+        projection operators."""
+        single_mode_states = []
+        for detection in outcome:
+            vector = np.zeros(cutoff)
+            vector[detection-1] = 1
+            outer_prod = np.outer(vector, vector)
+            single_mode_states.append(outer_prod)
+        operator = single_mode_states[0]
+        if len(single_mode_states) > 1:
+            for i in range(1, len(single_mode_states)):
+                operator = np.tensordot(operator, single_mode_states[i], 0)
+        return operator
+    
+    def trace(self, tensor: np.ndarray) -> float:
+        """Returns trace of an operator."""
+        shape = tensor.shape
+        suma = np.trace(tensor, axis1= len(shape)-2, axis2=len(shape)-1)
+        shape = suma.shape
+        for i in range(len(shape)-1, -1, -2):
+            if i-1 >= 0:
+                suma = np.trace(suma, axis1=i-1, axis2=i)
+        return suma
+    
+    def get_noisy_marginal_from_bosonic_simulation(
         self,
         n_modes: int,
         squeezing_params: np.ndarray,
         unitary: np.ndarray,
         target_modes: List,
-        theta: float = np.pi/4
+        loss: float = 0.5
     ) -> List:
         """Returns the marginal distribution of the target modes in a GBS simulation
         (incorporating optical loss) parameterised by the squeezing parameters, the
         interferometer unitary, the fock cut-off value and the number of modes."""
-        prog = sf.Program(2*n_modes)
-        with prog.context as q:
-            for i, s in enumerate(squeezing_params):
-                ops.Sgate(s) | q[i]
-            for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
-                cmd.op | cmd.reg
-            for i, qubit in enumerate(q[:n_modes]):
-                ops.BSgate(theta) | (qubit, q[n_modes + i]) 
+        prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss) 
         eng = sf.Engine("bosonic")
         result = eng.run(prog).state
         reduced_dm = result.reduced_dm(target_modes)
-        cutoff = len(reduced_dm)
+        cutoff = len(reduced_dm[0])
         outcomes = [p for p in iter.product(list(range(cutoff)), repeat = len(target_modes))]
-        marginal = [np.trace() for n in outcomes]
+        operators = [self.turn_detections_into_projection_operators(i, cutoff) for i in outcomes]
+        marginal = [self.trace(np.tensordot(P, np.tensordot(reduced_dm, P.T)).real) for P in operators]
+        print(marginal)
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
         inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
