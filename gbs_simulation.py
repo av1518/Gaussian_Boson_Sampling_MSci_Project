@@ -5,7 +5,8 @@ from typing import Tuple, List
 import itertools as iter
 from utils import bitstring_to_int, convert_to_clicks
 from itertools import combinations
-from gbs_circuits import get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss
+from gbs_circuits import (get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, 
+                         get_gbs_circuit_with_distinguishable_photons)
 import qutip
 
 class GBS_simulation:
@@ -114,6 +115,23 @@ class GBS_simulation:
             marginals.append([modes, marg])
         return np.array(marginals)
     
+    def get_marginal_from_simulation_with_distinguishable_photons(
+        self,
+        n_modes: int,
+        fock_cutoff: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        target_modes: List,
+        squeezing_imperfection: float = 0.2
+    ) -> List:
+        """Returns the marginal distribution of the target modes in a GBS simulation
+        (incorporating distinguishability) parameterised by the squeezing parameters, the
+        interferometer unitary, the fock cut-off value and the number of modes. The squeezing
+        imperfection determines the squeezing of the secondary wavelength."""
+        progs = get_gbs_circuit_with_distinguishable_photons(n_modes, unitary, squeezing_params, squeezing_imperfection)
+        marginal = np.sum([np.array(self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)) for prog in progs], axis=0)
+        return marginal
+    
     def turn_detections_into_projection_operators(
         self, 
         outcome: Tuple, 
@@ -130,7 +148,7 @@ class GBS_simulation:
         operator = single_mode_states[0]
         if len(single_mode_states) > 1:
             for i in range(1, len(single_mode_states)):
-                operator = np.tensordot(single_mode_states[i], operator, 0)
+                operator = np.kron(single_mode_states[i], operator)
         return operator
     
     def trace(self, tensor: np.ndarray) -> float:
@@ -146,6 +164,7 @@ class GBS_simulation:
     def get_noisy_marginal_from_bosonic_simulation(
         self,
         n_modes: int,
+        fock_cutoff: int,
         squeezing_params: np.ndarray,
         unitary: np.ndarray,
         target_modes: List,
@@ -157,12 +176,12 @@ class GBS_simulation:
         prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss) 
         eng = sf.Engine("bosonic")
         result = eng.run(prog).state
-        reduced_dm = result.reduced_dm(target_modes)
-        cutoff = len(reduced_dm[0])
-        outcomes = [p for p in iter.product(list(range(cutoff)), repeat = len(target_modes))]
-        operators = [self.turn_detections_into_projection_operators(i, cutoff) for i in outcomes]
-        marginal = [self.trace(np.tensordot(P, reduced_dm).real) for P in operators]
-        print(marginal)
+        reduced_dm = result.reduced_dm(target_modes, cutoff=fock_cutoff)
+        dim = np.prod(reduced_dm.shape[0:int(len(reduced_dm.shape)/2)])
+        rho = reduced_dm.reshape((dim,dim))
+        outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
+        operators = [self.turn_detections_into_projection_operators(i, fock_cutoff) for i in outcomes]
+        marginal = [np.trace(np.matmul(P, np.matmul(rho, P.conj().T)).real) for P in operators]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
         inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
