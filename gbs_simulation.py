@@ -31,6 +31,7 @@ class GBS_simulation:
         and obtains the threshold marginal distribution of the specified target modes."""
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(program)
+        print('Number expectation:', result.state.number_expectation(target_modes)[0])
         fock_ket = result.state.ket()
         print(f'Sum of all fock probabilities for cutoff {fock_cutoff}:', np.sum(result.state.all_fock_probs()))
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
@@ -173,15 +174,15 @@ class GBS_simulation:
         """Returns the marginal distribution of the target modes in a GBS simulation
         (incorporating optical loss) parameterised by the squeezing parameters, the
         interferometer unitary, the fock cut-off value and the number of modes."""
-        prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss) 
+        prog = get_ideal_gbs_circuit(n_modes, squeezing_params, unitary) 
         eng = sf.Engine("bosonic")
         result = eng.run(prog).state
         reduced_dm = result.reduced_dm(target_modes, cutoff=fock_cutoff)
         dim = np.prod(reduced_dm.shape[0:int(len(reduced_dm.shape)/2)])
         rho = reduced_dm.reshape((dim,dim))
+        marginal = [np.abs(rho[i][i].real) for i in range(len(rho))]
+        print(sum(marginal))
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
-        operators = [self.turn_detections_into_projection_operators(i, fock_cutoff) for i in outcomes]
-        marginal = [np.trace(np.matmul(P, np.matmul(rho, P.conj().T)).real) for P in operators]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
         inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
