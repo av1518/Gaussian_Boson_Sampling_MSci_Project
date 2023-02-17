@@ -36,9 +36,7 @@ plt.plot(loss, distances, 'o-', label = f'Modes = {n_modes}, Cutoff = {cutoff} '
 plt.xlabel('Loss')
 plt.ylabel(r'$\mathcal{D}$(Greedy,Ground)')
 plt.legend()
-# plt.show()
-# plt.xlim(-0.3,0.8)
-# plt.ylim(0,0.10)
+plt.show()
 
 # np.save('distances_greedy,ground_n=3_cut=8', distances)
 
@@ -56,10 +54,10 @@ def scaled_squeezing(mean_photon_number, n_modes, loss):
     return np.arcsinh(np.sqrt(mean_photon_number/(n_modes*(np.cos(loss_angle))**2)))
 
 n_modes = 3
-mean_n_photon = 1.0
+mean_n_photon = 0.8
 U = unitary_group.rvs(n_modes) 
 cutoff = 7
-loss = np.linspace(0, 0.5, 8)
+loss = np.linspace(0, 0.6, 10)
 ideal_squeezing = [scaled_squeezing(mean_n_photon, n_modes, 0)]*n_modes
 
 s = [scaled_squeezing(mean_n_photon, n_modes, i) for i in loss]
@@ -70,35 +68,21 @@ gbs = GBS_simulation()
 greedy = Greedy()
 probs = TheoreticalProbabilities()
 
-ideal_marg_tor = probs.get_all_ideal_marginals_from_torontonian(n_modes,ideal_squeezing,U,2)
-greedy_matrix = greedy.get_S_matrix(n_modes, 500, 2, ideal_marg_tor)
-greedy_dist = greedy.get_distribution_from_outcomes(greedy_matrix)
-
 distances = []
-all_zero_probs_with_scaling = []
-all_zero_probs_no_scaling = []
 
 for i in tqdm(loss):
     squeezing = [scaled_squeezing(mean_n_photon, n_modes, i)]*n_modes
+    marginals = gbs.get_all_noisy_marginals_from_simulation(n_modes, cutoff, squeezing, U, 2, i)
+    greedy_matrix = greedy.get_S_matrix(n_modes, 700, 2, marginals)
+    greedy_distr = greedy.get_distribution_from_outcomes(greedy_matrix)
     print('Total mean photon number:', total_mean_photon_number(i, squeezing))
-    ideal_dist = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), i)
-    ideal_dist_no_scaling = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, ideal_squeezing, U,list(range(n_modes)), i)
-    all_zero_probs_with_scaling.append(ideal_dist[0]) 
-    all_zero_probs_no_scaling.append(ideal_dist_no_scaling[0])
-    distance = total_variation_distance(ideal_dist, greedy_dist)
+    ground_distr = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), i)
+    distance = total_variation_distance(ground_distr, greedy_distr)
     distances.append(distance)
 
 plt.figure()
 plt.plot(loss, distances, 'o-', label = f'Modes = {n_modes}, Cutoff = {cutoff} ')
 plt.xlabel('Loss')
 plt.ylabel(r'$\mathcal{D}$(Greedy,Ground)')
-plt.legend()
-
-plt.figure()
-plt.plot(loss, all_zero_probs_no_scaling, 'o-', label = 'Ground without scaling')
-plt.plot(loss, all_zero_probs_with_scaling, 'o-', label = 'Ground with scaling')
-plt.plot(loss, [greedy_dist[0]]*len(loss), label = 'Greedy')
-plt.xlabel('Loss')
-plt.ylabel('Probability of all-zero bitstring')
 plt.legend()
 plt.show()
