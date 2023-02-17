@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import numpy as np
+import math
 
 def int_to_bitstring(integer: int) -> Tuple[int, ...]:
     """Converts an integer into a bitstring."""
@@ -50,7 +51,7 @@ def complex_to_polar(D_comp):
     '''
     angles = []
     for i in D_comp:
-        _,phi = cmath.polar(i)
+        _,phi = math.polar(i)
         if phi < 0 :
             phi = 2*np.pi + phi
         angles.append(phi )
@@ -69,3 +70,6 @@ def apply_random_deviation(input_matrix, standard_deviation):
         sublist_new[3] += deviation_4
         output_list.append(sublist_new)
     return output_list
+
+def kl_divergence(distr1: np.ndarray, distr2: np.ndarray):
+    return np.sum(np.where(distr1 != 0, distr1 * np.log(distr1 / distr2), 0))
