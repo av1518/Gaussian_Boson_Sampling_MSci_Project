@@ -5,7 +5,7 @@ from typing import Tuple, List
 import itertools as iter
 from utils import bitstring_to_int, convert_to_clicks
 from itertools import combinations
-from gbs_circuits import (get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, get_gbs_circuit_with_gate_error
+from gbs_circuits import (get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, get_gbs_circuit_with_gate_error,
                          get_gbs_circuit_with_distinguishable_photons)
 import qutip
 
@@ -31,9 +31,9 @@ class GBS_simulation:
         and obtains the threshold marginal distribution of the specified target modes."""
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(program)
-        print('Number expectation:', result.state.number_expectation(target_modes)[0])
+        # print('Number expectation:', result.state.number_expectation(target_modes)[0])
         fock_ket = result.state.ket()
-        print(f'Sum of all fock probabilities for cutoff {fock_cutoff}:', np.sum(result.state.all_fock_probs()))
+        # print(f'Sum of all fock probabilities for cutoff {fock_cutoff}:', np.sum(result.state.all_fock_probs()))
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
         marginal = [self.get_fock_prob(fock_ket, target_modes, n) for n in outcomes]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
