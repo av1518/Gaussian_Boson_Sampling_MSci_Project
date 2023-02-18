@@ -70,3 +70,6 @@ def apply_random_deviation(input_matrix, standard_deviation):
         sublist_new[3] += deviation_4
         output_list.append(sublist_new)
     return output_list
+
+def kl_divergence(distr1: np.ndarray, distr2: np.ndarray):
+    return np.sum(np.where(distr1 != 0, distr1 * np.log(distr1 / distr2), 0))
