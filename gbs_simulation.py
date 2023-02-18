@@ -5,7 +5,7 @@ from typing import Tuple, List
 import itertools as iter
 from utils import bitstring_to_int, convert_to_clicks
 from itertools import combinations
-from gbs_circuits import get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss
+from gbs_circuits import get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, get_gbs_circuit_with_gate_error
 
 
 class GBS_simulation:
@@ -68,6 +68,22 @@ class GBS_simulation:
         factor goes from 0 (no loss) to 1 (maximum loss)."""
         loss = loss*np.pi/2 # convert loss to beamsplitter angle (pi/2 is max loss)
         prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss)
+        return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
+
+
+    def get_noisy_marginal_gate_error(
+        self,
+        fock_cutoff: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        target_modes: List,
+        stdev: float = 0.5
+    ) -> List:
+        """Returns the marginal distribution of the target modes in a GBS simulation
+        (incorporating optical loss) parameterised by the squeezing parameters, the
+        interferometer unitary, the fock cut-off value and the number of modes. The loss
+        factor goes from 0 (no loss) to 1 (maximum loss)."""
+        prog = get_gbs_circuit_with_gate_error(unitary, squeezing_params,stdev)
         return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
 
     def get_all_ideal_marginals_from_simulation(

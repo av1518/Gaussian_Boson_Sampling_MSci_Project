@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import numpy as np
+from cmath import polar
 
 def int_to_bitstring(integer: int) -> Tuple[int, ...]:
     """Converts an integer into a bitstring."""
@@ -50,7 +51,7 @@ def complex_to_polar(D_comp):
     '''
     angles = []
     for i in D_comp:
-        _,phi = cmath.polar(i)
+        _,phi = polar(i)
         if phi < 0 :
             phi = 2*np.pi + phi
         angles.append(phi )

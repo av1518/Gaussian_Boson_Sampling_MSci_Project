@@ -35,6 +35,7 @@ def get_gbs_circuit_with_optical_loss(
 
 def get_gbs_circuit_with_gate_error(
     unitary: np.ndarray,
+    squeezing_params: List,
     std: float
 ):
     '''Takes in unitary, decomposes it using rectangular decomosition into T*V*T_dash (see Kolt's paper)
@@ -44,16 +45,14 @@ def get_gbs_circuit_with_gate_error(
     T = a[0]
     V = complex_to_polar(a[1])
     T_dash = a[2]
-
     T_noisy = apply_random_deviation(T,std)
     T_dash_noisy = apply_random_deviation(T_dash,std)
-
     N = T[0][-1] #number of modes
     noisy = sf.Program(N) #noisy gbs program
     eng = sf.Engine("fock", backend_options={"cutoff_dim": 6}) #not sure if this line is needed
     with noisy.context as q:
-        for i in range(N):
-            ops.Fock(1) | q[i]
+        for i, s in enumerate(squeezing_params):
+            ops.Sgate(s) | q[i]
         for row in T_noisy: #j is a row in T
             ops.Rgate(row[3]) | q[row[0]]
             ops.BSgate(row[2], 0) | (q[row[0]], q[row[1]])
@@ -62,5 +61,5 @@ def get_gbs_circuit_with_gate_error(
         for row in reversed(T_dash_noisy): #take the last row first
             ops.BSgate(-row[2],0) | (q[row[0]], q[row[1]])
             ops.Rgate(-row[3]) | q[row[0]]
-    noisy.compile(compiler="fock").print()
+    # noisy.compile(compiler="fock").print()
     return noisy
