@@ -63,22 +63,22 @@ ideal_squeezing = [scaled_squeezing(mean_n_photon, n_modes, 0)]*n_modes
 s = [scaled_squeezing(mean_n_photon, n_modes, i) for i in loss]
 print(s)
 
-#%%
-gbs = GBS_simulation()
-greedy = Greedy()
-probs = TheoreticalProbabilities()
+
 
 #%% Gate error model plot
 gbs = GBS_simulation()
 greedy = Greedy()
 probs = TheoreticalProbabilities()
+n_modes = 3
+U = unitary_group.rvs(n_modes) 
+r_k = [0.4] * n_modes
 
 ideal_marg_tor = probs.get_all_ideal_marginals_from_torontonian(n_modes,r_k,U,2)
 greedy_matrix = greedy.get_S_matrix(n_modes, 500, 2, ideal_marg_tor)
 greedy_dist = greedy.get_distribution_from_outcomes(greedy_matrix)
 
 cutoff = 6
-stddev = np.linspace(0, 5, 100  )
+stddev = np.linspace(0, 5, 10)
 
 distances = []
 for i in tqdm(stddev):  
@@ -94,12 +94,52 @@ plt.legend()
 
 # plt.xlim(-0.3,0.8)
 # plt.ylim(0,0.10)
+#%%
+np.save(f'distances_greedy,ground_n={n_modes}_cut={cutoff}_gate_error', distances)
+#%% Gate Error model averaged (monte carlo)
+gbs = GBS_simulation()
+greedy = Greedy()
+probs = TheoreticalProbabilities()
+n_modes = 4
+U = unitary_group.rvs(n_modes) 
+r_k = [0.4] * n_modes
+
+
+ideal_marg_tor = probs.get_all_ideal_marginals_from_torontonian(n_modes,r_k,U,2)
+greedy_matrix = greedy.get_S_matrix(n_modes, 500, 2, ideal_marg_tor)
+greedy_distr = greedy.get_distribution_from_outcomes(greedy_matrix)
+
+cutoff = 6
+stddev = np.linspace(0, 1, 20)
+repetitions = 50
+
+distances = []
+for i in tqdm(stddev):  
+    initial_ideal_distr = np.array(gbs.get_noisy_marginal_gate_error(cutoff, r_k, U, list(range(n_modes)), i))
+    for j in range(repetitions-1):
+        sample = np.array(gbs.get_noisy_marginal_gate_error(cutoff, r_k, U, list(range(n_modes)), i))
+        # print(f'sample = {sample}')
+        initial_ideal_distr += sample
+        # print(f'initial_ideal_distr= {initial_ideal_distr}')
+    avg_ideal_distr = initial_ideal_distr/repetitions
+    # print(avg_ideal_distr)
+    distance = total_variation_distance(avg_ideal_distr, greedy_distr)
+    distances.append(distance)
+
+#%%
+plt.plot(stddev, distances, 'o-', label = f'modes = {n_modes}, cutoff = {cutoff} ')
+plt.xlabel(r'Standard Deviation ')
+plt.ylabel(r'$\mathcal{D}$($Greedy$,$\overline{Ground}$)')
+plt.legend()
+
 
 
 #%%
 np.save(f'distances_greedy,ground_n={n_modes}_cut={cutoff}_gate_error', distances)
 plt.savefig('gate error model vs greedy')
+#%%
 distances = []
+
 
 for i in tqdm(loss):
     squeezing = [scaled_squeezing(mean_n_photon, n_modes, i)]*n_modes
