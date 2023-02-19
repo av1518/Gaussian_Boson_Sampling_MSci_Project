@@ -19,6 +19,24 @@ def get_ideal_gbs_circuit(
         ops.Interferometer(unitary) | q
     return prog
 
+def get_gbs_circuit_with_loss_channel(
+    n_modes: int, 
+    squeezing_params: List, 
+    unitary: np.ndarray,
+    loss: float
+):
+    """Returns Strawberry Fields program corresponding to a GBS circuit with
+    the given number of modes, squeezing parameters (applied to all of the
+    modes), and an interferometer (defined by the unitary)."""
+    prog = sf.Program(n_modes)
+    with prog.context as q:
+        for i, s in enumerate(squeezing_params):
+            ops.Sgate(s) | q[i]
+        ops.Interferometer(unitary) | q
+        for qubit in q:
+            ops.LossChannel(loss) | qubit
+    return prog
+
 def get_gbs_circuit_with_optical_loss(
     n_modes: int, 
     squeezing_params: List, 
