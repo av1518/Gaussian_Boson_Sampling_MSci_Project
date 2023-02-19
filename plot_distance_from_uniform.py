@@ -15,7 +15,7 @@ loss = np.linspace(0, 1, 20)
 simul = GBS_simulation()
 distances = []
 for factor in tqdm(loss):
-    ground_truth = simul.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
+    ground_truth = simul.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
     uniform_distr = np.array([1/(2**k_order)]*(2**k_order))
     distance = 0.5*np.sum(np.abs(ground_truth - uniform_distr))
     distances.append(distance)
@@ -28,7 +28,7 @@ target_modes = list(range(0, k_order))
 
 distances = []
 for factor in tqdm(loss):
-    ground_truth = simul.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
+    ground_truth = simul.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
     uniform_distr = np.array([1/(2**k_order)]*(2**k_order))
     distance = 0.5*np.sum(np.abs(ground_truth - uniform_distr))
     distances.append(distance)
@@ -41,7 +41,7 @@ loss = np.linspace(0, np.pi/2, 20)
 
 distances = []
 for factor in tqdm(loss):
-    ground_truth = simul.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
+    ground_truth = simul.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing_params, unitary, target_modes, factor)
     uniform_distr = np.array([1/(2**k_order)]*(2**k_order))
     distance = 0.5*np.sum(np.abs(ground_truth - uniform_distr))
     distances.append(distance)

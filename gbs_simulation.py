@@ -1,5 +1,4 @@
 import strawberryfields as sf
-from strawberryfields import ops
 import numpy as np
 from typing import Tuple, List
 import itertools as iter
@@ -7,8 +6,6 @@ from utils import bitstring_to_int, convert_to_clicks
 from itertools import combinations
 from gbs_circuits import (get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, get_gbs_circuit_with_gate_error,
                          get_gbs_circuit_with_distinguishable_photons, get_gbs_circuit_with_loss_channel)
-from itertools import chain
-import string
 
 class GBS_simulation:
 
@@ -22,7 +19,7 @@ class GBS_simulation:
         modes from the output state vector of a GBS simulation."""
         return np.sum([(x*x.conjugate()).real for i, x in np.ndenumerate(state_vec) if tuple([i[j] for j in modes]) == photon_numbers])
 
-    def _get_threshold_marginal_from_program(
+    def get_threshold_marginal_from_statevec(
         self,
         program,
         target_modes: List,
@@ -42,7 +39,7 @@ class GBS_simulation:
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
         return threshold_marginal
     
-    def _get_threshold_marginal(
+    def get_threshold_marginal_fock_backend(
         self,
         program,
         target_modes: List,
@@ -50,17 +47,47 @@ class GBS_simulation:
     ) -> List:
         """Runs a Strawberry Fields program in the Fock backend (with the specified cutoff)
         and obtains the threshold marginal distribution of the specified target modes."""
+        n_modes = program.num_subsystems
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(program)
-        probs = result.state.all_fock_probs().flatten()
-        marginal = probs
+        probs = result.state.all_fock_probs()
+        print(np.sum(probs))
+        inds = tuple([i for i in range(n_modes) if i not in target_modes])
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
+        marginal = np.sum(probs, axis=inds)
+        marginal = [marginal[i] for i in outcomes]
+        clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
+        inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
+        threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
+        return threshold_marginal
+    
+    def get_threshold_marginal_gaussian_backend(
+        self,
+        program,
+        target_modes: List,
+        fock_cutoff: int
+    ) -> List:
+        """Runs a Strawberry Fields program in the gaussian backend and
+        obtains the threshold marginal distribution of the specified target modes."""
+        eng = sf.Engine("gaussian")
+        result = eng.run(program)
+        n_modes = program.num_subsystems
+        full_outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = n_modes)]
+        probs=np.zeros((fock_cutoff,)*n_modes)
+        for i in full_outcomes:
+            if sum(list(i)) < fock_cutoff:
+                probs[i]=result.state.fock_prob(i)
+        print(np.sum(probs))
+        inds = tuple([i for i in range(n_modes) if i not in target_modes])
+        outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
+        marginal = np.sum(probs, axis=inds)
+        marginal = [marginal[i] for i in outcomes]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
         inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
         return threshold_marginal
 
-    def get_ideal_marginal_from_simulation(
+    def get_ideal_marginal_from_gaussian_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -72,9 +99,9 @@ class GBS_simulation:
         parameterised by the squeezing parameters, the interferometer unitary, the
         fock cut-off value and the number of modes."""
         prog = get_ideal_gbs_circuit(n_modes, squeezing_params, unitary)
-        return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
+        return self.get_threshold_marginal_gaussian_backend(prog, target_modes, fock_cutoff)
     
-    def get_noisy_marginal_from_simulation(
+    def get_lossy_marginal_from_gaussian_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -89,9 +116,9 @@ class GBS_simulation:
         factor goes from 0 (no loss) to 1 (maximum loss)."""
         loss = loss*np.pi/2 # convert loss to beamsplitter angle (pi/2 is max loss)
         prog = get_gbs_circuit_with_optical_loss(n_modes, squeezing_params, unitary, loss)
-        return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
+        return self.get_threshold_marginal_gaussian_backend(prog, target_modes, fock_cutoff)
 
-    def get_noisy_marginal_from_simulation_with_loss(
+    def get_lossy_marginal_from_fock_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -104,9 +131,8 @@ class GBS_simulation:
         (incorporating optical loss) parameterised by the squeezing parameters, the
         interferometer unitary, the fock cut-off value and the number of modes. The loss
         factor goes from 0 (no loss) to 1 (maximum loss)."""
-        loss = loss*np.pi/2 # convert loss to beamsplitter angle (pi/2 is max loss)
         prog = get_gbs_circuit_with_loss_channel(n_modes, squeezing_params, unitary, loss)
-        return self._get_threshold_marginal(prog, target_modes, fock_cutoff)
+        return self.get_threshold_marginal_fock_backend(prog, target_modes, fock_cutoff)
 
     def get_noisy_marginal_gate_error(
         self,
@@ -121,9 +147,9 @@ class GBS_simulation:
         interferometer unitary, the fock cut-off value and the number of modes. The loss
         factor goes from 0 (no loss) to 1 (maximum loss)."""
         prog = get_gbs_circuit_with_gate_error(unitary, squeezing_params,stdev)
-        return self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)
+        return self.get_threshold_marginal_from_statevec(prog, target_modes, fock_cutoff)
 
-    def get_all_ideal_marginals_from_simulation(
+    def get_all_ideal_marginals_from_gaussian_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -140,11 +166,11 @@ class GBS_simulation:
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
-            marg = self.get_ideal_marginal_from_simulation(n_modes, fock_cutoff, squeezing_params, unitary, modes)
+            marg = self.get_ideal_marginal_from_gaussian_simulation(n_modes, fock_cutoff, squeezing_params, unitary, modes)
             marginals.append([modes, marg])
         return np.array(marginals)
     
-    def get_all_noisy_marginals_from_simulation(
+    def get_all_lossy_marginals_from_gaussian_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -163,11 +189,11 @@ class GBS_simulation:
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
-            marg = self.get_noisy_marginal_from_simulation(n_modes, fock_cutoff, squeezing_params, unitary, modes, loss)
+            marg = self.get_lossy_marginal_from_gaussian_simulation(n_modes, fock_cutoff, squeezing_params, unitary, modes, loss)
             marginals.append([modes, marg])
         return np.array(marginals)
     
-    def get_all_noisy_marginals_from_simulation_with_loss(
+    def get_all_lossy_marginals_from_fock_simulation(
         self,
         n_modes: int,
         fock_cutoff: int,
@@ -186,7 +212,7 @@ class GBS_simulation:
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:
-            marg = self.get_noisy_marginal_from_simulation_with_loss(n_modes, fock_cutoff, squeezing_params, unitary, modes, loss)
+            marg = self.get_lossy_marginal_from_fock_simulation(n_modes, fock_cutoff, squeezing_params, unitary, modes, loss)
             marginals.append([modes, marg])
         return np.array(marginals)
     
@@ -204,7 +230,7 @@ class GBS_simulation:
         interferometer unitary, the fock cut-off value and the number of modes. The squeezing
         imperfection determines the squeezing of the secondary wavelength."""
         progs = get_gbs_circuit_with_distinguishable_photons(n_modes, unitary, squeezing_params, squeezing_imperfection)
-        marginal = np.sum([np.array(self._get_threshold_marginal_from_program(prog, target_modes, fock_cutoff)) for prog in progs], axis=0)
+        marginal = np.sum([np.array(self.get_threshold_marginal_from_statevec(prog, target_modes, fock_cutoff)) for prog in progs], axis=0)
         return marginal
     
     def turn_detections_into_projection_operators(
@@ -235,30 +261,4 @@ class GBS_simulation:
             if i-1 >= 0:
                 suma = np.trace(suma, axis1=i-1, axis2=i)
         return suma
-    
-    def get_noisy_marginal_from_bosonic_simulation(
-        self,
-        n_modes: int,
-        fock_cutoff: int,
-        squeezing_params: np.ndarray,
-        unitary: np.ndarray,
-        target_modes: List,
-        loss: float = 0.5
-    ) -> List:
-        """Returns the marginal distribution of the target modes in a GBS simulation
-        (incorporating optical loss) parameterised by the squeezing parameters, the
-        interferometer unitary, the fock cut-off value and the number of modes."""
-        prog = get_ideal_gbs_circuit(n_modes, squeezing_params, unitary) 
-        eng = sf.Engine("bosonic")
-        result = eng.run(prog).state
-        reduced_dm = result.reduced_dm(target_modes, cutoff=fock_cutoff)
-        dim = np.prod(reduced_dm.shape[0:int(len(reduced_dm.shape)/2)])
-        rho = reduced_dm.reshape((dim,dim))
-        marginal = [np.abs(rho[i][i].real) for i in range(len(rho))]
-        print(sum(marginal))
-        outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
-        clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
-        inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
-        threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
-        return threshold_marginal
 
