@@ -42,7 +42,7 @@ class GBS_simulation:
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
         return threshold_marginal
     
-    def _get_threshold_marginal_from_dm(
+    def _get_threshold_marginal(
         self,
         program,
         target_modes: List,
@@ -52,27 +52,13 @@ class GBS_simulation:
         and obtains the threshold marginal distribution of the specified target modes."""
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(program)
-        print('Number expectation:', result.state.number_expectation(target_modes)[0])
-        dm = result.state.dm(cutoff=fock_cutoff)
-        print(result.state.trace())
-        indices = string.ascii_lowercase
-        original_inds = [[indices[idx]] * 2 for idx in range(len(target_modes))]  # doubled indices [['i','i'],['j','j'], ... ]
-        original = "".join(chain.from_iterable(original_inds))  # flatten indices into a single string 'iijj...'
-        collapse_inds = [[indices[idx]] for idx in range(len(target_modes))]
-        collapse = "".join(chain.from_iterable(collapse_inds))
-        explicit = original + "->" + collapse
-        marginal = np.einsum(explicit, dm).real
-        print(np.trace(marginal))
-        for idx in range(len(target_modes)-1):
-            dm = np.einsum('...ii->...i', dm)
-        marginal = sum([dm[i][i].real for i in range(len(dm))])
-        print(sum(marginal))
+        probs = result.state.all_fock_probs().flatten()
+        marginal = probs
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
         clicks = [bitstring_to_int(x) for x in convert_to_clicks(outcomes)]
         inds_to_sum = [[i for i, x in enumerate(clicks) if x == j] for j in range(2**len(target_modes))]
         threshold_marginal = [np.sum([p for i, p in enumerate(marginal) if i in inds]) for inds in inds_to_sum]
         return threshold_marginal
-    
 
     def get_ideal_marginal_from_simulation(
         self,
@@ -120,7 +106,7 @@ class GBS_simulation:
         factor goes from 0 (no loss) to 1 (maximum loss)."""
         loss = loss*np.pi/2 # convert loss to beamsplitter angle (pi/2 is max loss)
         prog = get_gbs_circuit_with_loss_channel(n_modes, squeezing_params, unitary, loss)
-        return self._get_threshold_marginal_from_dm(prog, target_modes, fock_cutoff)
+        return self._get_threshold_marginal(prog, target_modes, fock_cutoff)
 
     def get_noisy_marginal_gate_error(
         self,
