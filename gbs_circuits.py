@@ -16,7 +16,8 @@ def get_ideal_gbs_circuit(
     with prog.context as q:
         for i, s in enumerate(squeezing_params):
             ops.Sgate(s) | q[i]
-        ops.Interferometer(unitary) | q
+        for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
+            cmd.op | cmd.reg
     return prog
 
 def get_gbs_circuit_with_loss_channel(
@@ -32,7 +33,8 @@ def get_gbs_circuit_with_loss_channel(
     with prog.context as q:
         for i, s in enumerate(squeezing_params):
             ops.Sgate(s) | q[i]
-        ops.Interferometer(unitary) | q
+        for cmd in ops.Interferometer(unitary).decompose(tuple([qubit for qubit in q[:n_modes]])):
+            cmd.op | cmd.reg
         for qubit in q:
             ops.LossChannel(loss) | qubit
     return prog

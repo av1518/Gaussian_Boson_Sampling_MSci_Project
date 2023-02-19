@@ -27,7 +27,7 @@ greedy_dist = greedy.get_distribution_from_outcomes(greedy_matrix)
 
 distances = []
 for i in tqdm(loss):  
-    ideal_dist = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, r_k, U,list(range(n_modes)), i)
+    ideal_dist = gbs.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, r_k, U,list(range(n_modes)), i)
     distance = total_variation_distance(ideal_dist, greedy_dist)
     distances.append(distance)
 
@@ -143,11 +143,11 @@ distances = []
 
 for i in tqdm(loss):
     squeezing = [scaled_squeezing(mean_n_photon, n_modes, i)]*n_modes
-    marginals = gbs.get_all_noisy_marginals_from_simulation(n_modes, cutoff, squeezing, U, 2, i)
+    marginals = gbs.get_all_lossy_marginals_from_gaussian_simulation(n_modes, cutoff, squeezing, U, 2, i)
     greedy_matrix = greedy.get_S_matrix(n_modes, 700, 2, marginals)
     greedy_distr = greedy.get_distribution_from_outcomes(greedy_matrix)
     print('Total mean photon number:', total_mean_photon_number(i, squeezing))
-    ground_distr = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), i)
+    ground_distr = gbs.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), i)
     distance = total_variation_distance(ground_distr, greedy_distr)
     distances.append(distance)
 

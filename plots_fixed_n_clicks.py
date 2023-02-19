@@ -52,7 +52,7 @@ print('Bitstring subset (in decimal):', subset)
 #%%
 distances = []
 for i in tqdm(loss):  
-    ground_distr = gbs.get_noisy_marginal_from_simulation(n_modes, cutoff, r_k, U,list(range(n_modes)), i)
+    ground_distr = gbs.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, r_k, U,list(range(n_modes)), i)
     conditional_probs = [x for i, x in enumerate(ground_distr) if i in subset]
     ground_distr = np.array(conditional_probs)/np.sum(conditional_probs)
     distance = total_variation_distance(ground_distr, greedy_distr)
@@ -79,7 +79,7 @@ distances = []
 for n in tqdm(n_fixed):
     fixed_n_clicks_submatrix = get_submatrix_with_fixed_n_clicks(greedy_matrix, n)
     subset, greedy_distr = get_distribution_from_outcomes(fixed_n_clicks_submatrix)
-    ideal_distr = gbs.get_ideal_marginal_from_simulation(n_modes, cutoff, r_k, U, list(range(n_modes)))
+    ideal_distr = gbs.get_ideal_marginal_from_gaussian_simulation(n_modes, cutoff, r_k, U, list(range(n_modes)))
     conditional_probs = [x for i, x in enumerate(ideal_distr) if i in subset]
     ideal_distr = np.array(conditional_probs)/np.sum(conditional_probs)
     distance = total_variation_distance(ideal_distr, greedy_distr)
