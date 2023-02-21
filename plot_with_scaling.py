@@ -57,8 +57,8 @@ def get_scaled_squeezing(tot_mean_n_photon, n_modes, loss):
     if np.isclose(func(root[0]), 0.0):
         return root[0]
 
-n_modes = 5
-mean_n_photon = 0.15
+n_modes = 4
+mean_n_photon = 0.1
 U = unitary_group.rvs(n_modes, random_state=1) 
 cutoff = 7
 loss = np.linspace(0, 0.5, 20)
