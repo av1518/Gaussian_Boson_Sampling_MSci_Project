@@ -14,9 +14,9 @@ import itertools as iter
 from itertools import combinations
 
 n_modes = 6
-cutoff = 4
+cutoff = 5
 k_order = 2
-L = 1000
+L = 1200
 unitary = unitary_group.rvs(n_modes)
 
 def ideal_renema_circuit_10(n_modes, unitary):
@@ -136,6 +136,7 @@ gbs = GBS_simulation()
 greedy = Greedy()
 
 ideal_margs = get_all_ideal_marginals_from_statevec(n_modes, get_renema_output_statevec(n_modes, unitary, cutoff), k_order)
+print(ideal_margs)
 greedy_matrix = greedy.get_S_matrix(n_modes, L, k_order, ideal_margs)
 greedy_distr = greedy.get_distribution_from_outcomes(greedy_matrix)
 print(greedy_distr)
@@ -155,7 +156,7 @@ plt.show()
 
 
 #%%
-# loss = np.linspace(0, 1, 13)
+# loss = np.linspace(0, 1, 8)
 
 # distances = []
 # for i in tqdm(loss):
