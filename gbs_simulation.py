@@ -6,6 +6,7 @@ from utils import bitstring_to_int, convert_to_clicks
 from itertools import combinations
 from gbs_circuits import (get_ideal_gbs_circuit, get_gbs_circuit_with_optical_loss, get_gbs_circuit_with_gate_error,
                          get_gbs_circuit_with_distinguishable_photons, get_gbs_circuit_with_loss_channel)
+import copy
 
 class GBS_simulation:
 
@@ -77,7 +78,8 @@ class GBS_simulation:
         for i in full_outcomes:
             if sum(list(i)) < fock_cutoff:
                 probs[i]=result.state.fock_prob(i)
-        print(np.sum(probs))
+        print('Sum of probs:', np.sum(probs))
+        print('Number expectation:', result.state.number_expectation(target_modes)[0])
         inds = tuple([i for i in range(n_modes) if i not in target_modes])
         outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
         marginal = np.sum(probs, axis=inds)
@@ -230,8 +232,18 @@ class GBS_simulation:
         interferometer unitary, the fock cut-off value and the number of modes. The squeezing
         imperfection determines the squeezing of the secondary wavelength."""
         progs = get_gbs_circuit_with_distinguishable_photons(n_modes, unitary, squeezing_params, squeezing_imperfection)
-        marginal = np.sum([np.array(self.get_threshold_marginal_from_statevec(prog, target_modes, fock_cutoff)) for prog in progs], axis=0)
-        return marginal
+        marginals = [np.array(self.get_threshold_marginal_gaussian_backend(prog, target_modes, fock_cutoff)) for prog in progs]
+        marginals = [marg/np.sum(marg) for marg in marginals] #renormalise
+        prob = marginals[0]
+        for i in range(1, len(marginals)):
+            new_probs = []
+            for j in range(len(prob)):
+                p_bars = [marginals[i][k] for k in range(j+1)]
+                new_prob_j = np.sum([p_bars[n]*prob[j-n] for n in range(len(p_bars)) if j >= n])
+                new_probs.append(new_prob_j)
+            new_probs = np.array(new_probs)/np.sum(new_probs) #renormalise
+            prob = copy.deepcopy(new_probs)
+        return prob
     
     def turn_detections_into_projection_operators(
         self, 
@@ -252,13 +264,4 @@ class GBS_simulation:
                 operator = np.kron(single_mode_states[i], operator)
         return operator
     
-    def trace(self, tensor: np.ndarray) -> float:
-        """Returns trace of an operator."""
-        shape = tensor.shape
-        suma = np.trace(tensor, axis1= len(shape)-2, axis2=len(shape)-1)
-        shape = suma.shape
-        for i in range(len(shape)-1, -1, -2):
-            if i-1 >= 0:
-                suma = np.trace(suma, axis1=i-1, axis2=i)
-        return suma
 
