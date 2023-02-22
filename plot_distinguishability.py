@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 n_modes = 5
 s = 0.5
 r_k = [s] * n_modes
-U = unitary_group.rvs(n_modes) 
+U = unitary_group.rvs(n_modes, random_state=1) 
 cutoff = 7
 s2 = np.linspace(0.0, 0.3, 30)
 L = 2000
