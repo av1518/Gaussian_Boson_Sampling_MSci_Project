@@ -14,10 +14,10 @@ import itertools as iter
 from itertools import combinations
 
 n_modes = 6
-cutoff = 4
+cutoff = 5
 k_order = 2
-L = 1000
-unitary = unitary_group.rvs(n_modes)
+L = 1200
+unitary = unitary_group.rvs(n_modes, random_state=1)
 
 def ideal_renema_circuit_10(n_modes, unitary):
     num_non_vacuum_modes = int(np.ceil(0.5*n_modes))
@@ -138,10 +138,10 @@ greedy = Greedy()
 ideal_margs = get_all_ideal_marginals_from_statevec(n_modes, get_renema_output_statevec(n_modes, unitary, cutoff), k_order)
 greedy_matrix = greedy.get_S_matrix(n_modes, L, k_order, ideal_margs)
 greedy_distr = greedy.get_distribution_from_outcomes(greedy_matrix)
-print(greedy_distr)
+np.save(f'greedy_renema_distr_n={n_modes}_cut={cutoff}_L={L}', greedy_distr)
 ket = get_renema_output_statevec(n_modes, unitary, cutoff)
 ideal_distr = np.array(get_threshold_marginal_from_statevec(ket, list(range(n_modes))))
-print(ideal_distr)
+np.save(f'ideal_renema_distr_n={n_modes}_cut={cutoff}', ideal_distr)
 distance = total_variation_distance(ideal_distr, greedy_distr)
 print(distance)
 
@@ -155,7 +155,7 @@ plt.show()
 
 
 #%%
-# loss = np.linspace(0, 1, 13)
+# loss = np.linspace(0, 1, 8)
 
 # distances = []
 # for i in tqdm(loss):
@@ -170,4 +170,5 @@ plt.show()
 # plt.ylabel(r'$\mathcal{D}$(Greedy,Ground)')
 # plt.legend()
 # plt.show()
+
 

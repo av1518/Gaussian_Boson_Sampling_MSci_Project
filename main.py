@@ -83,7 +83,7 @@ noisy_total_dist = 0.5*np.sum(np.abs(noisy_full_distr - greedy_full_dist))
 print('Distance between ideal and greedy:', ideal_total_dist)
 print('Distance between noisy and greedy:', noisy_total_dist)
 
-#%%
+#%% Test ideal marginals against torontonian:
 
 n_modes = 2
 squeezing_params = np.random.uniform(0.2, 0.3, n_modes)
@@ -92,3 +92,21 @@ ideal_marg_tor = TheoreticalProbabilities().get_marginal_distribution_from_tor([
 ideal_marg_simul = simul.get_ideal_marginal_from_gaussian_simulation(n_modes, 15, squeezing_params, unitary, [0,1])
 print('Marginal from torontonian:', ideal_marg_tor)
 print('Marginal from simulation:', ideal_marg_simul)
+
+#%% Test lossy and ideal marginals in different backends:
+
+n_modes = 3
+U = unitary_group.rvs(n_modes, random_state=1) 
+cutoff = 6
+loss = 0.0
+s = 0.5
+
+squeezing = [s]*n_modes
+print('Ideal:', simul.get_ideal_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes))))
+print('Lossy Fock:', simul.get_lossy_marginal_from_fock_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), loss))
+# Marginals obtained when using the LossChannel are not accuarte.
+print('Lossy Gaussian:', simul.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, squeezing, U,list(range(n_modes)), loss))
+
+print('Ideal marginals:', simul.get_all_ideal_marginals_from_gaussian_simulation(n_modes, cutoff, squeezing, U, 2))
+print('Lossy marginals:', simul.get_all_lossy_marginals_from_gaussian_simulation(n_modes, cutoff, squeezing, U, 2, loss))
+
