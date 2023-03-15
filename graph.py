@@ -5,6 +5,7 @@ from strawberryfields.decompositions import takagi
 import random 
 from tqdm import tqdm
 from gbs_simulation import GBS_simulation
+from gbs_probabilities import TheoreticalProbabilities
 from greedy import Greedy
 import copy
 from scipy.optimize import fsolve
@@ -135,7 +136,7 @@ class Graph():
 
 
 
-    def greedy_search(self, G, k, n, cutoff=5, repetitions = 400, L = 2000):
+    def greedy_search(self, G, k, n, repetitions = 400, L = 2000):
 
         adj = self.nx_adj(G)
         N = G.number_of_nodes()
@@ -147,8 +148,8 @@ class Graph():
         print(f's_ideal= {s_ideal}')
 
 
-        simul = GBS_simulation()
-        ideal_margs = simul.get_all_ideal_marginals_from_gaussian_simulation(N, cutoff, s_ideal, U, 2)
+        probs = TheoreticalProbabilities()
+        ideal_margs = probs.get_all_ideal_marginals_from_torontonian(N, s_ideal, U, 2)
         print('here1')
         maxima = []
 
@@ -197,7 +198,7 @@ class Graph():
         avg_maximum = np.sum(maxima)/repetitions
         return avg_maximum
 
-    def greedy_search2(self, G, k, n_range, cutoff=5, repetitions = 400, L = 2000):
+    def greedy_search2(self, G, k, n_range, repetitions = 400, L = 2000):
         adj = self.nx_adj(G)
         N = G.number_of_nodes()
         s_i, U = self.adj_to_GBS(adj)
@@ -206,8 +207,8 @@ class Graph():
         s_ideal = [self.get_scaled_squeezing(k, N, 0)] * N
         print(f's_ideal= {s_ideal}')
 
-        simul = GBS_simulation()
-        ideal_margs = simul.get_all_ideal_marginals_from_gaussian_simulation(N, cutoff, s_ideal, U, 2)
+        probs = TheoreticalProbabilities()
+        ideal_margs = probs.get_all_ideal_marginals_from_torontonian(N, s_ideal, U, 2)
         print('here1')
         avg_maxima = []
 
