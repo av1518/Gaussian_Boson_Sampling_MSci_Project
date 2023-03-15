@@ -12,6 +12,9 @@ from scipy.optimize import fsolve
 
 
 class Graph():
+    def __init__(self):
+        self.extra_samples= []
+        self.sl = [] #sample list
 
     def get_submatrix_with_fixed_n_clicks(
         self,
@@ -132,44 +135,56 @@ class Graph():
 
 
 
-    def greedy_search(self, G, k, n, preset_s, repetitions = 400, L = 2000):
+    def greedy_search(self, G, k, n, cutoff=5, repetitions = 400, L = 2000):
 
         adj = self.nx_adj(G)
         N = G.number_of_nodes()
         s_i, U = self.adj_to_GBS(adj)
         print(f's_i = {s_i}')
 
-        s_tuned = [preset_s] * N
-        # s_ideal = [self.get_scaled_squeezing(k/N, N, 0)] * N
-        # print(f's_ideal= {s_ideal}')
+        # s_tuned = [preset_s] * N
+        s_ideal = [self.get_scaled_squeezing(k/N + 0.2, N, 0)] * N
+        print(f's_ideal= {s_ideal}')
 
 
         simul = GBS_simulation()
-        ideal_margs = simul.get_all_ideal_marginals_from_gaussian_simulation(N, 5, s_tuned, U, 2)
+        ideal_margs = simul.get_all_ideal_marginals_from_gaussian_simulation(N, cutoff, s_ideal, U, 2)
         print('here1')
         maxima = []
+
         for repetitions in tqdm(range(repetitions)):
-            S_matrix = Greedy().get_S_matrix(N, L, 2, ideal_margs)
-            print(f'S matrix generated with L = {L} ')
-            # print(S_matrix)
-            # print('k=',k)
-            greedy_samples_array = self.get_submatrix_with_fixed_n_clicks(S_matrix, k)
-            greedy_samples = list(greedy_samples_array)
-            # print(f'now here, greedy samples = {greedy_samples}')
+            print(f'length of extra samples = {len(self.extra_samples)}')
+            if len(self.extra_samples) >= n:
+                greedy_samples = self.extra_samples[:n]
+                del self.extra_samples[:n]
+                print('got extra samples and deleted')
+            else:
+                S_matrix = Greedy().get_S_matrix(N, L, 2, ideal_margs)
+                print(f'S matrix generated with L = {L} ')
+                # print(S_matrix)
+                # print('k=',k)
+                greedy_samples_array = self.get_submatrix_with_fixed_n_clicks(S_matrix, k)
+                greedy_samples = list(greedy_samples_array)
+                self.extra_samples += greedy_samples
+                # print(f'now here, greedy samples = {greedy_samples}')
             
-            while (len(greedy_samples)) < n:
+
+
+            while (len(self.extra_samples)) < n:
                 print(f'more samples for n={n}')
-                more_S_matrix = Greedy().get_S_matrix(N, 1000, 2, ideal_margs)
+                more_S_matrix = Greedy().get_S_matrix(N, 2000, 2, ideal_margs)
                 more_greedy_samples = list(self.get_submatrix_with_fixed_n_clicks(more_S_matrix, k))
                 # print('more greedy samples before concatenation =', more_greedy_samples)
                 # print('dimension of more samples=', more_greedy_samples.shape)
                 greedy_samples += more_greedy_samples
+                self.extra_samples += more_greedy_samples
                 # np.concatenate((greedy_samples,more_greedy_samples))
                 
                 
             if len(greedy_samples) >= n:
                 # print('the samples = ', greedy_samples)
-                greedy_samples_n = greedy_samples[:n] 
+                greedy_samples_n = greedy_samples[:n]
+                self.extra_samples += greedy_samples[n:] 
 
             
             sample_d = []
@@ -181,7 +196,52 @@ class Graph():
             maxima.append(max(sample_d))
         avg_maximum = np.sum(maxima)/repetitions
         return avg_maximum
-        
+
+    def greedy_search2(self, G, k, n_range, cutoff=5, repetitions = 400, L = 2000):
+        adj = self.nx_adj(G)
+        N = G.number_of_nodes()
+        s_i, U = self.adj_to_GBS(adj)
+        print(f's_i = {s_i}')
+        # s_ideal = [self.get_scaled_squeezing(k/N + 0.3, N, 0)] * N
+        s_ideal = [self.get_scaled_squeezing(k, N, 0)] * N
+        print(f's_ideal= {s_ideal}')
+
+        simul = GBS_simulation()
+        ideal_margs = simul.get_all_ideal_marginals_from_gaussian_simulation(N, cutoff, s_ideal, U, 2)
+        print('here1')
+        avg_maxima = []
+
+        for n in n_range:
+            print(f'now at n={n}')
+            maxima_for_this_n = []
+            
+            for repetitions in tqdm(range(repetitions)):
+                
+                print(f'length of extra samples = {len(self.sl)}')
+
+                while len(self.sl) < n:
+                    S_matrix = Greedy().get_S_matrix(N, L, 2, ideal_margs)
+                    print(f'S matrix generated with L = {L} ')
+                    subset = list(self.get_submatrix_with_fixed_n_clicks(S_matrix, k))
+                    print(f'length of subset = {len(subset)}')
+                    self.sl += subset
+
+                samples_for_this_n = self.sl[:n]
+                del self.sl[:n]
+                print('got samples from sl and deleted')
+
+                sample_d = []
+                for i in range(n):
+                    sample = samples_for_this_n[i]
+                    d = self.density_adj(self.get_reduced_adj(adj, sample))
+                    sample_d.append(d)
+                maxima_for_this_n.append(max(sample_d))
+            avg_maximum_for_this_n = np.sum(maxima_for_this_n)/repetitions
+            avg_maxima.append(avg_maximum_for_this_n)
+
+        return avg_maxima
+            
+            
         
 
 
