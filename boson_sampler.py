@@ -18,7 +18,7 @@ class BS_simulation:
         photon_numbers: Tuple[int, ...]
     ) -> float:
         """Returns the probability of detecting a specific photon pattern in the specified
-        modes from the output state vector of a GBS simulation."""
+        modes from the output state vector of a BS simulation."""
         return np.sum([(x*x.conjugate()).real for i, x in np.ndenumerate(state_vec) if tuple([i[j] for j in modes]) == photon_numbers])
 
     def get_threshold_marginal_from_statevec(
@@ -71,9 +71,11 @@ class BS_simulation:
         unitary: np.ndarray,
         target_modes: List
     ) -> List:
-        """Returns the marginal distribution of the target modes in a GBS simulation
+        """Returns the marginal distribution of the target modes in a BS simulation
         parameterised by the squeezing parameters, the interferometer unitary, the
-        fock cut-off value and the number of modes."""
+        fock cut-off value and the number of modes. The number of input photons
+        specifies how many input modes have a single photon (the rest are initialised
+        as vacuum)."""
         index = np.zeros((n_modes,), dtype=np.int16)
         index[:n_input_photons] = 1
         ket = np.zeros([fock_cutoff]*n_modes, dtype=np.complex128)
@@ -93,11 +95,12 @@ class BS_simulation:
         k_order: int
     ) -> np.ndarray:
         """Gets ground truth k-th order marginals from the output statevector of the Strawberry
-        Fields simulation of a GBS experiment with the given number of modes, squeezing
+        Fields simulation of a BS experiment with the given number of modes, squeezing
         parameters and unitary matrix (defining the interferometer). The fock cutoff defines
         the truncation of the fock basis in the simulation. Returns an array where each element
         has two sublists. The first one is the set of mode indices of that marginal, and the 
-        second one is the marginal distribution."""
+        second one is the marginal distribution. The number of input photons parameter specifies
+        how many input modes have a single photon (the rest are initialised as vacuum)."""
         comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
         marginals : List = []
         for modes in comb:

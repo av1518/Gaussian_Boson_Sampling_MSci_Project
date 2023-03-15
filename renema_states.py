@@ -19,7 +19,9 @@ k_order = 2
 L = 1200
 unitary = unitary_group.rvs(n_modes, random_state=1)
 
-def ideal_renema_circuit_10(n_modes, unitary):
+def ideal_renema_circuit_10(n_modes: int, unitary: np.ndarray):
+    """Boson sampler with single photons as inputs in half of the modes
+    (in the upper half) and vacuum states in the lower half."""
     num_non_vacuum_modes = int(np.ceil(0.5*n_modes))
     index = np.zeros((n_modes,), dtype=np.int16)
     index[:num_non_vacuum_modes] = 1
@@ -31,7 +33,9 @@ def ideal_renema_circuit_10(n_modes, unitary):
         ops.Interferometer(unitary) | q
     return prog
 
-def ideal_renema_circuit_01(n_modes, unitary):
+def ideal_renema_circuit_01(n_modes: int, unitary: np.ndarray):
+    """Boson sampler with single photons as inputs in half of the modes
+    (in the lower half) and vacuum states in the upper half."""
     num_non_vacuum_modes = int(np.ceil(0.5*n_modes))
     index = np.zeros((n_modes,), dtype=np.int16)
     index[num_non_vacuum_modes:] = 1
@@ -43,7 +47,11 @@ def ideal_renema_circuit_01(n_modes, unitary):
         ops.Interferometer(unitary) | q
     return prog
 
-def noisy_renema_circuit_10(n_modes, unitary, loss):
+def noisy_renema_circuit_10(n_modes: int, unitary: np.ndarray, loss: float):
+    """Boson sampler with single photons as inputs in half of the modes
+    (in the upper half) and vacuum states in the lower half. It also
+    incorporates optical loss with the same beamsplitter construction used
+    in the gbs_simulation.py file."""
     loss = loss*np.pi/2
     num_non_vacuum_modes = int(np.ceil(0.5*n_modes))
     index = np.zeros((2*n_modes,), dtype=np.int16)
@@ -59,7 +67,11 @@ def noisy_renema_circuit_10(n_modes, unitary, loss):
             ops.BSgate(loss) | (qubit, q[n_modes + i])
     return prog
 
-def noisy_renema_circuit_01(n_modes, unitary, loss):
+def noisy_renema_circuit_01(n_modes: int, unitary: np.ndarray, loss: float):
+    """Boson sampler with single photons as inputs in half of the modes
+    (in the lower half) and vacuum states in the upper half. It also
+    incorporates optical loss with the same beamsplitter construction used
+    in the gbs_simulation.py file."""
     loss = loss*np.pi/2
     num_non_vacuum_modes = int(np.ceil(0.5*n_modes))
     index = np.zeros((2*n_modes,), dtype=np.int16)
@@ -80,7 +92,7 @@ def get_state_vector_from_program(
     fock_cutoff: int
 ) -> np.ndarray:
     """Runs a Strawberry Fields program in the Fock backend (with the specified cutoff)
-    and obtains the threshold marginal distribution of the specified target modes."""
+    and obtains the output stave vector."""
     eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
     result = eng.run(program)
     fock_ket = result.state.ket()
@@ -99,6 +111,8 @@ def get_threshold_marginal_from_statevec(
     ket: np.ndarray,
     target_modes: List
 ) -> List:
+    """Returns the threshold marginal distribution (calculated from the state vector)
+    of the specified target modes."""
     fock_cutoff = ket.shape[0]
     outcomes = [p for p in iter.product(list(range(fock_cutoff)), repeat = len(target_modes))]
     marginal = [get_fock_prob(ket, target_modes, n) for n in outcomes]
@@ -112,6 +126,7 @@ def get_all_ideal_marginals_from_statevec(
     ket: np.ndarray,
     k_order: int
 ) -> np.ndarray:
+    """Returns all kth-order marginal distributions (calculated from the state vector)."""
     comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
     marginals : List = []
     for modes in comb:
@@ -120,12 +135,16 @@ def get_all_ideal_marginals_from_statevec(
     return np.array(marginals)
 
 def get_renema_output_statevec(n_modes, unitary, cutoff):
+    """Superposes the output state vectors of the two disjunct Renema circuits and returns the
+    corresponding state vector."""
     ket1 = get_state_vector_from_program(ideal_renema_circuit_01(n_modes, unitary), cutoff)
     ket2 = get_state_vector_from_program(ideal_renema_circuit_10(n_modes, unitary), cutoff)
     superposition_ket = (1/np.sqrt(2))*(ket1 + ket2)
     return superposition_ket
 
 def get_noisy_renema_output_statevec(n_modes, unitary, cutoff, loss):
+    """Superposes the output state vectors of the two disjunct Renema circuits (incorporating
+    optical loss) and returns the corresponding state vector."""
     ket1 = get_state_vector_from_program(noisy_renema_circuit_01(n_modes, unitary, loss), cutoff)
     ket2 = get_state_vector_from_program(noisy_renema_circuit_10(n_modes, unitary, loss), cutoff)
     superposition_ket = (1/np.sqrt(2))*(ket1 + ket2)

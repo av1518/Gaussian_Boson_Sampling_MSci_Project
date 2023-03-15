@@ -28,7 +28,9 @@ def get_gbs_circuit_with_loss_channel(
 ):
     """Returns Strawberry Fields program corresponding to a GBS circuit with
     the given number of modes, squeezing parameters (applied to all of the
-    modes), and an interferometer (defined by the unitary)."""
+    modes), an interferometer (defined by the unitary), and a loss channel in
+    every mode. The loss parameter specifies the probability that a photon
+    is lost (0 for no loss and 1 for 100% loss)."""
     prog = sf.Program(n_modes)
     with prog.context as q:
         for i, s in enumerate(squeezing_params):
