@@ -155,14 +155,14 @@ class Greedy():
         [0,2], [1,2].
         """
         marginals = self._format_marginals(marginals, n_modes)
-        assert (len(marginals) == n_modes - 1)
+        assert (len(marginals) == n_modes - k_order + 1)
         for data in marginals:
             for d in data:
                 marginal = d[1]
                 assert (len(marginal) == 2**k_order)
                 assert np.allclose(np.sum(marginal), 1, atol=0.05)
         S_matrix = np.empty((n_rows, n_modes))
-        for j in range(n_modes - 1):
+        for j in range(n_modes - k_order + 1):
             submatrix_inds = self._get_submatrix_indices(S_matrix.shape, k_order, j)
             for i in range(n_rows):
                 self._add_optimal_bitstring(S_matrix, submatrix_inds[i], marginals[j], j)
