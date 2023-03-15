@@ -245,6 +245,28 @@ class GBS_simulation:
             prob = copy.deepcopy(new_probs)
         return prob
     
+    def get_all_noisy_marginals_from_gaussian_simulation_with_distinguishability(
+        self,
+        n_modes: int,
+        fock_cutoff: int,
+        squeezing_params: np.ndarray,
+        unitary: np.ndarray,
+        k_order: int,
+        squeezing_imperfection: float = 0.2
+    ) -> np.ndarray:
+        """Gets ground truth k-th order marginals from the output statevector of the Strawberry
+        Fields simulation of a GBS experiment (incorporating distinguishability) with the given number
+        of modes, squeezing parameters and the interferometer unitary. The fock cutoff defines
+        the truncation of the fock basis in the simulation. Returns an array where each element
+        has two sublists. The first one is the set of mode indices of that marginal, and the 
+        second one is the marginal distribution."""
+        comb = [list(c) for c in combinations(list(range(n_modes)), k_order)]
+        marginals : List = []
+        for modes in comb:
+            marg = self.get_marginal_from_simulation_with_distinguishable_photons(n_modes, fock_cutoff, squeezing_params, unitary, modes, squeezing_imperfection)
+            marginals.append([modes, marg])
+        return np.array(marginals)
+    
     def turn_detections_into_projection_operators(
         self, 
         outcome: Tuple, 
