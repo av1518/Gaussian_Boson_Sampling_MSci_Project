@@ -7,20 +7,20 @@ import matplotlib.pyplot as plt
 
 
 #Create random graph and assign random weights (with a seed)
-G = nx.erdos_renyi_graph(7, 0.5, seed = 5 ) 
+G = nx.erdos_renyi_graph(4, 0.5, seed = 5 ) 
 random.seed(42)
 for (u, v) in G.edges():
     G.edges[u,v]['weight'] = random.uniform(0.005,0.010)
 
 
-sample_sizes = np.linspace(1,200, 20)
+sample_sizes = np.linspace(1, 25, 20)
 int_ns = [int(x) for x in sample_sizes]
 
 
-cut = 20
-k = 3
+cut = 10
+k = 2
 
-maxima = Graph().greedy_search2(G, k, n_range= int_ns, cutoff=cut, repetitions = 20)
+maxima = Graph().greedy_search2(G, k, n_range= int_ns, repetitions = 10)
 #%%
 np.save(f'maxima_from_greedy_search_range', maxima)
 #%%

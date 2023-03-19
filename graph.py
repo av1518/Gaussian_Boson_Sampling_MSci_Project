@@ -204,9 +204,8 @@ class Graph():
         s_i, U = self.adj_to_GBS(adj)
         print(f's_i = {s_i}')
         # s_ideal = [self.get_scaled_squeezing(k/N + 0.3, N, 0)] * N
-        s_ideal = [self.get_scaled_squeezing(k, N, 0)] * N
+        s_ideal = [self.get_scaled_squeezing(k-0.45, N, 0)] * N
         print(f's_ideal= {s_ideal}')
-
         probs = TheoreticalProbabilities()
         ideal_margs = probs.get_all_ideal_marginals_from_torontonian(N, s_ideal, U, 2)
         print('here1')
@@ -216,12 +215,12 @@ class Graph():
             print(f'now at n={n}')
             maxima_for_this_n = []
             
-            for repetitions in tqdm(range(repetitions)):
+            for repetition in tqdm(range(repetitions)):
                 
                 print(f'length of extra samples = {len(self.sl)}')
 
                 while len(self.sl) < n:
-                    S_matrix = Greedy().get_S_matrix(N, L, 2, ideal_margs)
+                    S_matrix = Greedy().get_S_matrix(N, L, k, ideal_margs)
                     print(f'S matrix generated with L = {L} ')
                     subset = list(self.get_submatrix_with_fixed_n_clicks(S_matrix, k))
                     print(f'length of subset = {len(subset)}')
