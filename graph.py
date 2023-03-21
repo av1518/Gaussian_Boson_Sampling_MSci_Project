@@ -110,7 +110,7 @@ class Graph():
         Returns the reduced matrix associated with the input mode indices.
         '''
         indices = self.find_ones(sample)
-        sigma_red = np.empty((len(indices),len(indices)), dtype=complex)
+        sigma_red = np.empty((len(indices),len(indices)))
         for r_index, row in enumerate(indices):
             for c_index, column in enumerate(indices):
                 sigma_red[r_index, c_index] = sigma[row, column]
@@ -204,12 +204,13 @@ class Graph():
         s_i, U = self.adj_to_GBS(adj)
         print(f's_i = {s_i}')
         # s_ideal = [self.get_scaled_squeezing(k/N + 0.3, N, 0)] * N
-        s_ideal = [self.get_scaled_squeezing(k-0.45, N, 0)] * N
+        s_ideal = [self.get_scaled_squeezing(k, N, 0)] * N
         print(f's_ideal= {s_ideal}')
         probs = TheoreticalProbabilities()
         ideal_margs = probs.get_all_ideal_marginals_from_torontonian(N, s_ideal, U, 2)
         print('here1')
         avg_maxima = []
+        std_devs = []
 
         for n in n_range:
             print(f'now at n={n}')
@@ -220,7 +221,7 @@ class Graph():
                 print(f'length of extra samples = {len(self.sl)}')
 
                 while len(self.sl) < n:
-                    S_matrix = Greedy().get_S_matrix(N, L, k, ideal_margs)
+                    S_matrix = Greedy().get_S_matrix(N, L, 2, ideal_margs)
                     print(f'S matrix generated with L = {L} ')
                     subset = list(self.get_submatrix_with_fixed_n_clicks(S_matrix, k))
                     print(f'length of subset = {len(subset)}')
@@ -233,13 +234,17 @@ class Graph():
                 sample_d = []
                 for i in range(n):
                     sample = samples_for_this_n[i]
+                    # print(sample)
                     d = self.density_adj(self.get_reduced_adj(adj, sample))
+                    # print(d)
                     sample_d.append(d)
                 maxima_for_this_n.append(max(sample_d))
             avg_maximum_for_this_n = np.sum(maxima_for_this_n)/repetitions
-            avg_maxima.append(avg_maximum_for_this_n)
+            std_for_this_n = np.std(maxima_for_this_n)
 
-        return avg_maxima
+            avg_maxima.append(avg_maximum_for_this_n)
+            std_devs.append(std_for_this_n)
+        return avg_maxima, std_devs
             
             
         
