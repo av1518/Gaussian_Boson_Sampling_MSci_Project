@@ -72,4 +72,5 @@ def apply_random_deviation(input_matrix, standard_deviation):
     return output_list
 
 def kl_divergence(distr1: np.ndarray, distr2: np.ndarray):
-    return np.sum(np.where(distr1 != 0, distr1 * np.log(distr1 / distr2), 0))
+    '''Returns KL divergence between two distributions.'''
+    return np.sum([distr1[i] * np.log(distr1[i] / distr2[i]) for i in range(len(distr1)) if distr1[i] != 0 and distr2[i] != 0])
