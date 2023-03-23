@@ -19,7 +19,7 @@ probs = TheoreticalProbabilities()
 n_modes = 5
 r_k = [0.4] * n_modes
 U = unitary_group.rvs(n_modes) 
-cutoff = 7
+cutoff = 6
 n_points = 30
 loss = np.linspace(0, 1, n_points )
 L = 2000
@@ -34,6 +34,8 @@ for i in tqdm(loss):
     ideal_dist = gbs.get_lossy_marginal_from_gaussian_simulation(n_modes, cutoff, r_k, U,list(range(n_modes)), i)
     distance = kl_divergence(ideal_dist, greedy_dist)
     distances.append(distance)
+
+np.save(f'distances_kl_greedy,ground_n={n_modes}_cut={cutoff}_samples={L}_N={n_points}', distances)
 
 #%%
 # distances = np.load('distances_greedy,ground_n=5_cut=7_samples=1000.npy',allow_pickle=True)

@@ -91,7 +91,8 @@ class Graph():
                 sample_d.append(d)
             maxima.append(max(sample_d))
         avg_maximum = np.sum(maxima)/repetitions
-        return avg_maximum
+        std = np.std(maxima)
+        return avg_maximum,std
 
     def find_ones(self, lst):
         indices = []
