@@ -70,9 +70,30 @@ L = 2000
 # np.save(f'greedy_kl_success_distinguishability_n={n_modes}_cut={cutoff}_primary_squeezing={s}_L={L}', distances)
 # plt.show()
 
-distances = np.load('greedy_success_distinguishability_n=5_cut=8_primary_squeezing=0.5_L=2000.npy')
-d7 = np.load('greedy_success_distinguishability_n=5_cut=7_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
-d8 = np.load('greedy_success_distinguishability_n=5_cut=8_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
+# d7 = np.load('greedy_success_distinguishability_n=5_cut=7_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
+# d8 = np.load('greedy_success_distinguishability_n=5_cut=8_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
+# error = 1/5 * abs(d8-d7)
+
+
+# with plt.style.context(['science']):
+#     plt.figure(figsize=[8, 6])
+#     plt.xticks(size=16)
+#     plt.yticks(size=16)
+#     plt.plot(s2, d8, 'o', label = f'Modes = {n_modes}, Cutoff = {cutoff} ', markersize=7, color = 'black')
+#     plt.plot(s2, d8, '--', label = r'$\chi^2$ fit',color = 'firebrick', linewidth = 2.5)
+#     plt.errorbar(s2,d8,yerr= error, label=f' Cutoff error',capsize = 7,color = 'black',linestyle = '' )
+#     plt.xlabel('Squeezing of imperfection',fontsize = 20)
+#     plt.ylabel(r'$\mathcal{D}$(Greedy,Ground)', fontsize = 20)
+#     plt.legend()
+#     plt.tight_layout()
+#     plt.legend(fontsize=18)
+#     plt.savefig('distinguishability_dist_plot', dpi=600)
+#     plt.show()
+
+#%%
+
+d7 = np.load('greedy_kl_success_distinguishability_n=5_cut=7_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
+d8 = np.load('greedy_kl_success_distinguishability_n=5_cut=8_primary_squeezing=0.5_L=2000.npy', allow_pickle=True)
 error = 1/5 * abs(d8-d7)
 
 
@@ -84,9 +105,9 @@ with plt.style.context(['science']):
     plt.plot(s2, d8, '--', label = r'$\chi^2$ fit',color = 'firebrick', linewidth = 2.5)
     plt.errorbar(s2,d8,yerr= error, label=f' Cutoff error',capsize = 7,color = 'black',linestyle = '' )
     plt.xlabel('Squeezing of imperfection',fontsize = 20)
-    plt.ylabel(r'$\mathcal{D}$(Greedy,Ground)', fontsize = 20)
+    plt.ylabel(r'$\mathcal{KL}$(Greedy,Ground)', fontsize = 20)
     plt.legend()
     plt.tight_layout()
     plt.legend(fontsize=18)
-    plt.savefig('distinguishability_dist_plot', dpi=600)
+    plt.savefig('distinguishability_kl_plot', dpi=600)
     plt.show()

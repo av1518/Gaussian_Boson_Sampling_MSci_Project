@@ -58,7 +58,7 @@ with plt.style.context(['science']):
     for i in range(len(k_greedy)):
         plt.plot(k_order, full_mean_dists[i], 'o-', label = f'Approximation order = {k_greedy[i]}', linewidth=2.5, markersize=7)
     plt.xlabel('Marginal Order', fontsize=20)
-    plt.ylabel('Mean KL Divergence', fontsize=20)
+    plt.ylabel(r'$\mathcal{\overline{KL}}$(Greedy,Ground)', fontsize=20)
     plt.legend(fontsize=16)
     plt.savefig('high_order_correlations_kl_plot.png', dpi=600)
     plt.show()
