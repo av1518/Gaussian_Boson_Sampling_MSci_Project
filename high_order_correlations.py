@@ -6,11 +6,11 @@ from gbs_simulation import GBS_simulation
 from gbs_probabilities import TheoreticalProbabilities
 from tqdm import tqdm
 
-n_modes = 7
-s = 0.5
-squeezing_params = [s] * n_modes
-unitary = unitary_group.rvs(n_modes, random_state=1)
-L = 2000
+# n_modes = 7
+# s = 0.5
+# squeezing_params = [s] * n_modes
+# unitary = unitary_group.rvs(n_modes, random_state=1)
+# L = 2000
 
 # probs = TheoreticalProbabilities()
 # k_greedy = list(range(1, 6))
@@ -38,13 +38,13 @@ L = 2000
 
 # np.save(f'high_order_correlations_n={n_modes}_squeezing={s}_L={L}_up_to_{k_greedy[-1]}th_order_approx', full_mean_dists)
 
-#%%
-# n_modes = 5
-# s = 0.5
-# squeezing_params = [s] * n_modes
-# unitary = unitary_group.rvs(n_modes, random_state=1)
-# L = 2000
-# cutoff = 8
+# %%
+n_modes = 5
+s = 0.5
+squeezing_params = [s] * n_modes
+unitary = unitary_group.rvs(n_modes, random_state=1)
+L = 2000
+cutoff = 8
 # s2 = 0.25
 
 # probs = TheoreticalProbabilities()
@@ -83,7 +83,7 @@ L = 2000
 #         mean_div2 = np.sum(marginal_divs2)/len(marginal_divs2)
 #         mean_dists_noisy.append(mean_dist2)
 #         mean_divs_noisy.append(mean_div2)
-    
+
 #     full_mean_dists_ideal.append(mean_dists_ideal)
 #     full_mean_dists_noisy.append(mean_dists_noisy)
 #     full_mean_divs_ideal.append(mean_divs_ideal)
@@ -103,7 +103,7 @@ L = 2000
 # np.save(f'high_order_correlations_kl_noisy_n={n_modes}_squeezing={s}_s2={s2}_L={L}_approx_order={k_greedy[0]},{k_greedy[1]}', full_mean_divs_noisy)
 
 
-#%%
+# %%
 
 # n_modes = 5
 # s = 0.5
@@ -129,77 +129,124 @@ L = 2000
 #         mean_dist = np.sum(marginal_dists)/len(marginal_dists)
 #         mean_dists.append(mean_dist)
 #     plt.plot(k_order, mean_dists, label = f'Greedy order={k_order_fixed}')
-    
+
 # plt.xlabel('Marginal order')
 # plt.ylabel('Mean Variation Distance')
 # plt.xticks(k_order)
 # plt.legend()
 # plt.show()
 
-#%%
-plt.rcParams['axes.facecolor']='white'
-plt.rcParams['savefig.facecolor']='white'
-plt.rcParams['axes.linewidth'] = 1.5
-plt.rcParams['xtick.major.width'] = 1.5
-plt.rcParams['ytick.major.width'] = 1.5
-plt.rcParams['xtick.major.size'] = 50
+# %%
+plt.rcParams["axes.facecolor"] = "white"
+plt.rcParams["savefig.facecolor"] = "white"
+plt.rcParams["axes.linewidth"] = 1.5
+plt.rcParams["xtick.major.width"] = 1.5
+plt.rcParams["ytick.major.width"] = 1.5
+plt.rcParams["xtick.major.size"] = 50
 
-full_mean_dists = np.load('high_order_correlations_n=7_squeezing=0.5_L=2000_up_to_5th_order_approx.npy')
+full_mean_dists = np.load(
+    "high_order_correlations_n=7_squeezing=0.5_L=2000_up_to_5th_order_approx.npy"
+)
 k_greedy = list(range(1, 6))
 k_order = list(range(1, n_modes + 1))
 
-with plt.style.context(['science']):
-    plt.figure(figsize=[8,6])
-    plt.xticks(k_order, size=16)
-    plt.yticks(size=16)
+with plt.style.context(["science"]):
+    plt.figure(figsize=[8, 6])
+    plt.xticks(k_order, size=20)
+    plt.yticks(size=20)
     plt.tight_layout()
     for i in range(len(k_greedy)):
-        plt.plot(k_order, full_mean_dists[i], 'o-', label = f'Approximation order = {k_greedy[i]}', linewidth=2.5, markersize=7)
-    plt.xlabel('Marginal Order', fontsize=20)
-    plt.ylabel(r'$\mathcal{\overline{D}}$(Greedy,Ground)', fontsize=20)
-    plt.legend(fontsize=16)
-    plt.savefig('high_order_correlations_distance_plot.png', dpi=600)
+        plt.plot(
+            k_order,
+            full_mean_dists[i],
+            "o-",
+            label=f"Approximation Order = {k_greedy[i]}",
+            linewidth=2.5,
+            markersize=7,
+        )
+    plt.xlabel("Marginal Order", fontsize=24)
+    plt.ylabel(r"$\mathcal{\overline{D}}$(Greedy,GBS)", fontsize=24)
+    plt.legend(fontsize=20)
+    plt.savefig("high_order_correlations_distance_plot.png", dpi=600)
+
+# %%
+plt.rcParams["axes.facecolor"] = "white"
+plt.rcParams["savefig.facecolor"] = "white"
+plt.rcParams["axes.linewidth"] = 1.5
+plt.rcParams["xtick.major.width"] = 1.5
+plt.rcParams["ytick.major.width"] = 1.5
+plt.rcParams["xtick.major.size"] = 50
+
+full_mean_dists_ideal = np.load(
+    "high_order_correlations_ideal_n=5_squeezing=0.5_s2=0.25_L=2000_approx_order=2,3.npy"
+)
+full_mean_dists_noisy = np.load(
+    "high_order_correlations_noisy_n=5_squeezing=0.5_s2=0.25_L=2000_approx_order=2,3.npy"
+)
+full_mean_divs_ideal = np.load(
+    "high_order_correlations_kl_ideal_n=5_squeezing=0.5_s2=0.25_L=2000_approx_order=2,3.npy"
+)
+full_mean_divs_noisy = np.load(
+    "high_order_correlations_kl_noisy_n=5_squeezing=0.5_s2=0.25_L=2000_approx_order=2,3.npy"
+)
+
+k_greedy = list(range(2, 3))
+k_order = list(range(1, n_modes + 1))
+
+with plt.style.context(["science"]):
+    plt.figure(figsize=[8, 6])
+    plt.xticks(k_order, size=18)
+    plt.yticks(size=18)
+    plt.tight_layout()
+    for i in range(len(k_greedy)):
+        plt.plot(
+            k_order,
+            full_mean_dists_ideal[i],
+            "o-",
+            label=f"Ideal",
+            linewidth=2.5,
+            markersize=7,
+        )
+        plt.plot(
+            k_order,
+            full_mean_dists_noisy[i],
+            "o-",
+            label=f"Noisy",
+            linewidth=2.5,
+            markersize=7,
+        )
+    plt.xlabel("Marginal Order", fontsize=22)
+    plt.ylabel(r"$\mathcal{\overline{D}}$(Greedy,GBS)", fontsize=22)
+    plt.legend(fontsize=18)
+    plt.savefig(
+        "high_order_correlations_comparison_ideal-noisy_s2=0.25_plot.png", dpi=600
+    )
+
+    plt.figure(figsize=[8, 6])
+    plt.xticks(k_order, size=20)
+    plt.yticks(size=20)
+    plt.tight_layout()
+    for i in range(len(k_greedy)):
+        plt.plot(
+            k_order,
+            full_mean_divs_ideal[i],
+            "o-",
+            label=f"Order {k_greedy[i]} approximation, ideal",
+            linewidth=2.5,
+            markersize=7,
+        )
+        plt.plot(
+            k_order,
+            full_mean_divs_noisy[i],
+            "o-",
+            label=f"Order {k_greedy[i]} approximation, noisy",
+            linewidth=2.5,
+            markersize=7,
+        )
+    plt.xlabel("Marginal Order", fontsize=24)
+    plt.ylabel(r"$\mathcal{\overline{KL}}$(Greedy,GBS)", fontsize=24)
+    plt.legend(fontsize=20)
+    plt.savefig(
+        "high_order_correlations_kl_comparison_ideal-noisy_s2=0.25_plot.png", dpi=600
+    )
     plt.show()
-
-#%%
-# plt.rcParams['axes.facecolor']='white'
-# plt.rcParams['savefig.facecolor']='white'
-# plt.rcParams['axes.linewidth'] = 1.5
-# plt.rcParams['xtick.major.width'] = 1.5
-# plt.rcParams['ytick.major.width'] = 1.5
-# plt.rcParams['xtick.major.size'] = 50
-
-# full_mean_dists_ideal = np.load('high_order_correlations_ideal_n=5_squeezing=0.5_s2=0.18_L=2000_approx_order=2,3.npy')
-# full_mean_dists_noisy = np.load('high_order_correlations_noisy_n=5_squeezing=0.5_s2=0.18_L=2000_approx_order=2,3.npy')
-# full_mean_divs_ideal = np.load('high_order_correlations_kl_ideal_n=5_squeezing=0.5_s2=0.18_L=2000_approx_order=2,3.npy')
-# full_mean_divs_noisy = np.load('high_order_correlations_kl_noisy_n=5_squeezing=0.5_s2=0.18_L=2000_approx_order=2,3.npy')
-
-# k_greedy = list(range(2, 4))
-# k_order = list(range(1, n_modes + 1))
-
-# with plt.style.context(['science']):
-#     plt.figure(figsize=[8,6])
-#     plt.xticks(k_order, size=16)
-#     plt.yticks(size=16)
-#     plt.tight_layout()
-#     for i in range(len(k_greedy)):
-#         plt.plot(k_order, full_mean_dists_ideal[i], 'o-', label = f'Order {k_greedy[i]} approximation, ideal', linewidth=2.5, markersize=7)
-#         plt.plot(k_order, full_mean_dists_noisy[i], 'o-', label = f'Order {k_greedy[i]} approximation, noisy', linewidth=2.5, markersize=7)
-#     plt.xlabel('Marginal Order', fontsize=20)
-#     plt.ylabel(r'$\mathcal{\overline{D}}$(Greedy,Ground)', fontsize=20)
-#     plt.legend(fontsize=16)
-#     plt.savefig('high_order_correlations_comparison_ideal-noisy_s2=0.18_plot.png', dpi=600)
-
-#     plt.figure(figsize=[8,6])
-#     plt.xticks(k_order, size=16)
-#     plt.yticks(size=16)
-#     plt.tight_layout()
-#     for i in range(len(k_greedy)):
-#         plt.plot(k_order, full_mean_divs_ideal[i], 'o-', label = f'Order {k_greedy[i]} approximation, ideal', linewidth=2.5, markersize=7)
-#         plt.plot(k_order, full_mean_divs_noisy[i], 'o-', label = f'Order {k_greedy[i]} approximation, noisy', linewidth=2.5, markersize=7)
-#     plt.xlabel('Marginal Order', fontsize=20)
-#     plt.ylabel(r'$\mathcal{\overline{KL}}$(Greedy,Ground)', fontsize=20)
-#     plt.legend(fontsize=16)
-#     plt.savefig('high_order_correlations_kl_comparison_ideal-noisy_s2=0.18_plot.png', dpi=600)
-#     plt.show()
-    

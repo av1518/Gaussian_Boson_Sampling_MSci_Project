@@ -39,26 +39,35 @@ L = 2000
 # np.save(f'high_order_correlations_kl_n={n_modes}_squeezing={s}_L={L}_up_to_{k_greedy[-1]}th_order_approx', full_mean_dists)
 
 
-plt.rcParams['axes.facecolor']='white'
-plt.rcParams['savefig.facecolor']='white'
-plt.rcParams['axes.linewidth'] = 1.5
-plt.rcParams['xtick.major.width'] = 1.5
-plt.rcParams['ytick.major.width'] = 1.5
-plt.rcParams['xtick.major.size'] = 50
+plt.rcParams["axes.facecolor"] = "white"
+plt.rcParams["savefig.facecolor"] = "white"
+plt.rcParams["axes.linewidth"] = 1.5
+plt.rcParams["xtick.major.width"] = 1.5
+plt.rcParams["ytick.major.width"] = 1.5
+plt.rcParams["xtick.major.size"] = 50
 
-full_mean_dists = np.load('high_order_correlations_kl_n=7_squeezing=0.5_L=2000_up_to_5th_order_approx.npy')
+full_mean_dists = np.load(
+    "high_order_correlations_kl_n=7_squeezing=0.5_L=2000_up_to_5th_order_approx.npy"
+)
 k_greedy = list(range(1, 6))
 k_order = list(range(1, n_modes + 1))
 
-with plt.style.context(['science']):
-    plt.figure(figsize=[8,6])
-    plt.xticks(k_order, size=16)
-    plt.yticks(size=16)
+with plt.style.context(["science"]):
+    plt.figure(figsize=[8, 6])
+    plt.xticks(k_order, size=20)
+    plt.yticks(size=20)
     plt.tight_layout()
     for i in range(len(k_greedy)):
-        plt.plot(k_order, full_mean_dists[i], 'o-', label = f'Approximation order = {k_greedy[i]}', linewidth=2.5, markersize=7)
-    plt.xlabel('Marginal Order', fontsize=20)
-    plt.ylabel(r'$\mathcal{\overline{KL}}$(Greedy,Ground)', fontsize=20)
-    plt.legend(fontsize=16)
-    plt.savefig('high_order_correlations_kl_plot.png', dpi=600)
+        plt.plot(
+            k_order,
+            full_mean_dists[i],
+            "o-",
+            label=f"Approximation order = {k_greedy[i]}",
+            linewidth=2.5,
+            markersize=7,
+        )
+    plt.xlabel("Marginal Order", fontsize=24)
+    plt.ylabel(r"$\mathcal{\overline{KL}}$(Greedy,GBS)", fontsize=24)
+    plt.legend(fontsize=20)
+    plt.savefig("high_order_correlations_kl_plot.png", dpi=600)
     plt.show()
