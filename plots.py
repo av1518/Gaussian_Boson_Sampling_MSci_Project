@@ -25,14 +25,14 @@ r_k = [0.4] * n_modes
 U = unitary_group.rvs(n_modes) 
 cutoff = 7
 loss = np.linspace(0, 1, 30 )
-L = 2000
+L = 1000
 
 with plt.style.context(['science']):
     plt.figure(figsize=[9, 6])
     plt.xticks(size=16)
     plt.yticks(size=16)
-    d6 =  np.load('distances_kl_greedy,ground_n=5_cut=6_samples=2000_N=30.npy', allow_pickle=True)
-    d7 = np.load('distances_kl_greedy,ground_n=5_cut=7_samples=2000_N=30.npy', allow_pickle=True)
+    d6 =  np.load('distances_greedy,ground_n=5_cut=6_samples=1000_N=30.npy', allow_pickle=True)
+    d7 = np.load('distances_greedy,ground_n=5_cut=7_samples=1000_N=30.npy', allow_pickle=True)
     plt.plot(loss, d6, 'o-', label=f'Modes = {n_modes}, Cutoff = 6, Samples = {L}', markersize=8)
     plt.plot(loss, d7, 'o-', label=f'Modes = {n_modes}, Cutoff = 7, Samples = {L}', markersize=8)
     plt.xlabel('Loss', fontsize=18)
@@ -55,14 +55,37 @@ with plt.style.context(['science']):
 
 
     d7 = np.load('distances_greedy,ground_n=5_cut=7_samples=1000_N=30.npy', allow_pickle=True)
-    plt.errorbar(loss, d7, yerr=cutoff_error,label=f' Cutoff error',capsize = 7,color = 'black',linestyle = '' )
+    plt.errorbar(loss, d7, yerr=cutoff_error/2,label=f' Cutoff error',capsize = 7,color = 'black',linestyle = '' )
+    plt.plot(loss, d7, 'o', label=f'Modes = {n_modes}, Cutoff = 7', markersize=7, color = 'black')
+    plt.plot(loss, d7, '--', label=r'$\chi^2$ fit', markersize=7, color = 'navy', linewidth = 2)
+    plt.xlabel('Optical loss fraction', fontsize=23)
+    plt.ylabel(r'$\mathcal{KL}$(Greedy,GBS)', fontsize=23)
+    plt.legend(fontsize=20)
+
+    plt.savefig('results_kl_optical_loss.png', dpi=600)
+    plt.show()
+
+# %% Optical loss with cutoff error
+cutoff_error = abs(d7-d6)
+
+with plt.style.context(['science']):
+    plt.figure(figsize=[8,6])
+    plt.xticks(size=16)
+    plt.yticks(size=16)
+    plt.tight_layout()
+    plt.title('Optical Loss model', size = 25)
+    
+
+
+    d7 = np.load('distances_greedy,ground_n=5_cut=7_samples=1000_N=30.npy', allow_pickle=True)
+    plt.errorbar(loss, d7, yerr=cutoff_error/2,label=f' Cutoff error',capsize = 7,color = 'black',linestyle = '' )
     plt.plot(loss, d7, 'o', label=f'Modes = {n_modes}, Cutoff = 7', markersize=7, color = 'black')
     plt.plot(loss, d7, '--', label=r'$\chi^2$ fit', markersize=7, color = 'firebrick', linewidth = 2)
     plt.xlabel('Optical loss fraction', fontsize=23)
     plt.ylabel(r'$\mathcal{D}$(Greedy,GBS)', fontsize=23)
     plt.legend(fontsize=20)
 
-    plt.savefig('optical-loss-plot.png', dpi=600)
+    plt.savefig('results_distance_optical_loss.png', dpi=600)
     plt.show()
 
 #%% Gate model
@@ -79,7 +102,7 @@ kl = np.load('kl_greedy,ground_n=4_cut=6,repetitions=100,range =0.3,_gate_error,
 def f(x,a,b):
     return a*x**2 + b 
 
-popt,pcov = curve_fit(f,stddev,kl)
+popt,pcov = curve_fit(f,stddev,distances)
 #####
 def generate_random_array(length, min_val, max_val):
     random_array = []
@@ -95,18 +118,18 @@ with plt.style.context(['science']):
     plt.xticks(size=16)
     plt.yticks(size=16)
 
-
-    plt.plot(stddev, kl, 'o-', label = f'Modes = {n_modes}, Cutoff = {cutoff}, Repetitions = {repetitions}', markersize=7, color = 'black'
+    plt.title('Gate Error model', size = 25)
+    plt.plot(stddev, distances, 'o-', label = f'Modes = {n_modes}, Cutoff = {cutoff}, Repetitions = {repetitions}', markersize=7, color = 'black'
     )
     plt.plot(stddev, f(stddev,popt[0],popt[1]),linestyle='--',color = 'firebrick',linewidth = 2, label = r'$\chi^2$ fit')
-    plt.errorbar(stddev, kl, yerr= er/2,capsize= 3, linestyle = '', color = 'black')
+    plt.errorbar(stddev, distances, yerr= er/6,capsize= 3, linestyle = '', color = 'black')
     plt.xlabel(r'Standard Deviation $\sigma$ ', fontsize = 20)
-    plt.ylabel(r'$\overline{\mathcal{KL}}$(Greedy,GBS)', fontsize = 20)
+    plt.ylabel(r'$\overline{\mathcal{D}}$(Greedy,GBS)', fontsize = 20)
 
 
     plt.tight_layout()
     plt.legend(fontsize=19.5)
-    plt.savefig('KL gate model plot.png', dpi=600)
+    plt.savefig('results_distance_gate_error.png', dpi=600)
     plt.show()
 
 #%% Scaling plot
@@ -157,7 +180,7 @@ error = 1/5 * abs(d7-d6)
 with plt.style.context(['science']):
   
     plt.figure(figsize=[8, 6])
-    # plt.title('Distinguishability model', fontsize=22)
+    plt.title('Distinguishability model', fontsize=25)
     plt.xticks(size=16)
     plt.yticks(size=16)
 
@@ -172,7 +195,7 @@ with plt.style.context(['science']):
 
     plt.tight_layout()
     plt.legend(fontsize=20)
-    plt.savefig('distinguishability-plot', dpi=500)
+    plt.savefig('results_distance_distinguishability', dpi=500)
     plt.show()
 
 #%%Adding error
